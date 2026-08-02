@@ -1,0 +1,23 @@
+# Dependencias y compilación
+node_modules/
+.next/
+out/
+coverage/
+
+# Entorno y datos locales
+.env
+.env.local
+.env.*.local
+*.db
+*.db-journal
+prisma/dev.db*
+.data/
+
+# Plataforma y sistema
+.vercel/
+.DS_Store
+*.log
+
+# Archivos privados de desarrollo
+storage-private/
+*.tsbuildinfo

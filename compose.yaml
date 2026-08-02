@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: xs_abogados
+      POSTGRES_USER: xs_local
+      POSTGRES_PASSWORD: xs_local_only
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xs_local -d xs_abogados"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - xs_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  xs_postgres_data:

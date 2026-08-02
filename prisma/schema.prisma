@@ -1,0 +1,549 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLIENT
+  LAWYER
+  ADMIN
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum MatterStatus {
+  ACTIVE
+  CONCLUDED
+  ARCHIVED
+}
+
+enum MatterStage {
+  INITIAL_REVIEW
+  ANALYSIS
+  STRATEGY_DEFINED
+  NEGOTIATION
+  IN_PROGRESS
+  PENDING_AUTHORITY
+  PENDING_CLIENT
+  RESOLUTION
+  CONCLUDED
+  ARCHIVED
+}
+
+enum MatterAssignmentRole {
+  LEAD
+  COLLABORATOR
+  REVIEWER
+}
+
+enum Visibility {
+  CLIENT
+  INTERNAL
+}
+
+enum AppointmentModality {
+  IN_PERSON
+  VIDEO_CALL
+  PHONE_CALL
+}
+
+enum AppointmentStatus {
+  REQUESTED
+  CONFIRMED
+  RESCHEDULE_REQUESTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  PENDING_SYNC
+}
+
+enum CalendarSyncStatus {
+  NOT_REQUIRED
+  PENDING
+  SYNCED
+  FAILED
+}
+
+enum AppointmentChangeType {
+  CANCEL
+  RESCHEDULE
+}
+
+enum AppointmentChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ContactStatus {
+  NEW
+  IN_REVIEW
+  RESOLVED
+  SPAM
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DocumentScanStatus {
+  PENDING
+  CLEAN
+  REJECTED
+}
+
+enum NotificationType {
+  MATTER_UPDATE
+  MESSAGE
+  DOCUMENT
+  APPOINTMENT
+  SYSTEM
+}
+
+enum TokenType {
+  PASSWORD_RESET
+  ACCOUNT_INVITE
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  MOCKED
+}
+
+model User {
+  id                String               @id @default(cuid())
+  name              String
+  email             String               @unique
+  passwordHash      String
+  role              UserRole             @default(CLIENT)
+  status            UserStatus           @default(INVITED)
+  sessionVersion    Int                  @default(1)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  lastLoginAt       DateTime?
+  clientProfile     ClientProfile?
+  lawyerProfile     LawyerProfile?
+  matterUpdates     MatterUpdate[]       @relation("MatterUpdateAuthor")
+  stageTransitions  MatterStageHistory[] @relation("MatterStageActor")
+  uploadedDocuments Document[]           @relation("DocumentUploader")
+  messages          Message[]            @relation("MessageSender")
+  notifications     Notification[]
+  auditLogs         AuditLog[]           @relation("AuditActor")
+  authoredArticles  Article[]            @relation("ArticleAuthor")
+  actionTokens      ActionToken[]
+  settingsUpdates   SiteSettings[]       @relation("SettingsUpdater")
+
+  @@index([role, status])
+  @@index([createdAt])
+}
+
+model ClientProfile {
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  phone         String?
+  company       String?
+  notesInternal String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  matters       Matter[]
+  appointments  Appointment[]
+
+  @@index([company])
+}
+
+model PracticeArea {
+  id               String               @id @default(cuid())
+  slug             String               @unique
+  name             String
+  shortDescription String
+  body             String
+  servicesJson     Json
+  faqsJson         Json
+  sortOrder        Int                  @default(0)
+  active           Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  lawyers          LawyerPracticeArea[]
+  appointments     Appointment[]
+  articles         Article[]
+
+  @@index([active, sortOrder])
+}
+
+model LawyerProfile {
+  id                String               @id @default(cuid())
+  userId            String?              @unique
+  slug              String               @unique
+  displayName       String
+  position          String
+  bio               String
+  education         String
+  image             String?
+  imageAlt          String?
+  sortOrder         Int                  @default(0)
+  active            Boolean              @default(true)
+  emailPublic       String?
+  linkedInUrl       String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  user              User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  areas             LawyerPracticeArea[]
+  assignments       MatterAssignment[]
+  appointments      Appointment[]
+  availabilityRules AvailabilityRule[]
+  blockedTimes      BlockedTime[]
+
+  @@index([active, sortOrder])
+}
+
+model LawyerPracticeArea {
+  lawyerId       String
+  practiceAreaId String
+  isPrimary      Boolean       @default(false)
+  lawyer         LawyerProfile @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+  practiceArea   PracticeArea  @relation(fields: [practiceAreaId], references: [id], onDelete: Restrict)
+
+  @@id([lawyerId, practiceAreaId])
+  @@index([practiceAreaId, isPrimary])
+}
+
+model Matter {
+  id                  String               @id @default(cuid())
+  reference           String               @unique
+  title               String
+  descriptionPublic   String?
+  descriptionInternal String?
+  status              MatterStatus         @default(ACTIVE)
+  stage               MatterStage          @default(INITIAL_REVIEW)
+  clientId            String
+  nextActionAt        DateTime?
+  nextActionPublic    String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  archivedAt          DateTime?
+  client              ClientProfile        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  assignments         MatterAssignment[]
+  updates             MatterUpdate[]
+  stageHistory        MatterStageHistory[]
+  appointments        Appointment[]
+  documents           Document[]
+  messages            Message[]
+
+  @@index([clientId, status, updatedAt])
+  @@index([stage, status])
+  @@index([nextActionAt])
+}
+
+model MatterAssignment {
+  matterId   String
+  lawyerId   String
+  role       MatterAssignmentRole @default(COLLABORATOR)
+  assignedAt DateTime             @default(now())
+  matter     Matter               @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  lawyer     LawyerProfile        @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+
+  @@id([matterId, lawyerId])
+  @@index([lawyerId, role])
+}
+
+model MatterUpdate {
+  id          String     @id @default(cuid())
+  matterId    String
+  title       String
+  body        String
+  visibility  Visibility @default(CLIENT)
+  createdById String
+  createdAt   DateTime   @default(now())
+  matter      Matter     @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  createdBy   User       @relation("MatterUpdateAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([matterId, visibility, createdAt])
+  @@index([createdById, createdAt])
+}
+
+model MatterStageHistory {
+  id         String       @id @default(cuid())
+  matterId   String
+  fromStage  MatterStage?
+  toStage    MatterStage
+  note       String?
+  visibility Visibility   @default(CLIENT)
+  actorId    String
+  createdAt  DateTime     @default(now())
+  matter     Matter       @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  actor      User         @relation("MatterStageActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([matterId, visibility, createdAt])
+}
+
+model Appointment {
+  id                 String                       @id @default(cuid())
+  reference          String                       @unique
+  clientId           String?
+  matterId           String?
+  fullName           String
+  email              String
+  phone              String
+  company            String?
+  practiceAreaId     String
+  lawyerId           String?
+  modality           AppointmentModality
+  startAt            DateTime
+  endAt              DateTime
+  timezone           String                       @default("America/Mexico_City")
+  status             AppointmentStatus            @default(REQUESTED)
+  description        String
+  privacyAcceptedAt  DateTime
+  manageTokenHash    String                       @unique
+  externalEventId    String?
+  calendarSyncStatus CalendarSyncStatus           @default(PENDING)
+  calendarSyncError  String?
+  internalNotes      String?
+  cancelledAt        DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  client             ClientProfile?               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  matter             Matter?                      @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  practiceArea       PracticeArea                 @relation(fields: [practiceAreaId], references: [id], onDelete: Restrict)
+  lawyer             LawyerProfile?               @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+  reservationSlots   AppointmentReservationSlot[]
+  changeRequests     AppointmentChangeRequest[]
+
+  @@index([lawyerId, startAt, status])
+  @@index([clientId, startAt])
+  @@index([matterId, startAt])
+  @@index([status, startAt])
+  @@index([email, createdAt])
+}
+
+model AppointmentReservationSlot {
+  id            String      @id @default(cuid())
+  appointmentId String
+  resourceKey   String
+  startsAt      DateTime
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+
+  @@unique([resourceKey, startsAt])
+  @@index([appointmentId])
+  @@index([startsAt])
+}
+
+model AppointmentChangeRequest {
+  id               String                  @id @default(cuid())
+  appointmentId    String
+  type             AppointmentChangeType
+  requestedStartAt DateTime?
+  reason           String?
+  status           AppointmentChangeStatus @default(PENDING)
+  createdAt        DateTime                @default(now())
+  resolvedAt       DateTime?
+  appointment      Appointment             @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+
+  @@index([appointmentId, status, createdAt])
+}
+
+model AvailabilityRule {
+  id              String         @id @default(cuid())
+  lawyerId        String?
+  weekday         Int
+  startMinutes    Int
+  endMinutes      Int
+  durationMinutes Int            @default(45)
+  bufferMinutes   Int            @default(15)
+  timezone        String         @default("America/Mexico_City")
+  active          Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  lawyer          LawyerProfile? @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+
+  @@index([lawyerId, weekday, active])
+}
+
+model BlockedTime {
+  id        String         @id @default(cuid())
+  lawyerId  String?
+  startsAt  DateTime
+  endsAt    DateTime
+  reason    String?
+  createdAt DateTime       @default(now())
+  lawyer    LawyerProfile? @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+
+  @@index([lawyerId, startsAt, endsAt])
+}
+
+model Document {
+  id           String             @id @default(cuid())
+  matterId     String
+  title        String
+  originalName String
+  storageKey   String             @unique
+  mimeType     String
+  size         Int
+  visibility   Visibility         @default(CLIENT)
+  scanStatus   DocumentScanStatus @default(PENDING)
+  uploadedById String
+  createdAt    DateTime           @default(now())
+  matter       Matter             @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  uploadedBy   User               @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([matterId, visibility, createdAt])
+}
+
+model Message {
+  id         String     @id @default(cuid())
+  matterId   String
+  senderId   String
+  body       String
+  visibility Visibility @default(CLIENT)
+  createdAt  DateTime   @default(now())
+  readAt     DateTime?
+  matter     Matter     @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  sender     User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([matterId, visibility, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  type        NotificationType
+  title       String
+  body        String
+  href        String?
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+
+  @@index([recipientId, readAt, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model Article {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  excerpt        String
+  body           String
+  authorId       String?
+  practiceAreaId String?
+  status         ArticleStatus @default(DRAFT)
+  publishedAt    DateTime?
+  readingMinutes Int           @default(5)
+  image          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  author         User?         @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  practiceArea   PracticeArea? @relation(fields: [practiceAreaId], references: [id], onDelete: Restrict)
+
+  @@index([status, publishedAt])
+  @@index([practiceAreaId, status, publishedAt])
+}
+
+model ContactSubmission {
+  id                String        @id @default(cuid())
+  reference         String        @unique
+  name              String
+  email             String
+  phone             String
+  company           String?
+  practiceArea      String?
+  message           String
+  privacyAcceptedAt DateTime
+  status            ContactStatus @default(NEW)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email, createdAt])
+}
+
+model ActionToken {
+  id        String    @id @default(cuid())
+  userId    String?
+  email     String
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([email, type, expiresAt])
+  @@index([userId, type, expiresAt])
+}
+
+model EmailOutbox {
+  id         String              @id @default(cuid())
+  recipient  String
+  subject    String
+  template   String
+  payload    Json
+  status     EmailDeliveryStatus @default(PENDING)
+  attempts   Int                 @default(0)
+  providerId String?
+  lastError  String?
+  createdAt  DateTime            @default(now())
+  sentAt     DateTime?
+
+  @@index([status, createdAt])
+  @@index([recipient, createdAt])
+}
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  scope       String
+  keyHash     String
+  windowStart DateTime
+  count       Int      @default(1)
+  expiresAt   DateTime
+  updatedAt   DateTime @updatedAt
+
+  @@unique([scope, keyHash, windowStart])
+  @@index([expiresAt])
+}
+
+model SiteSettings {
+  id              String   @id @default("default")
+  firmName        String   @default("XS ABOGADOS")
+  domain          String   @default("https://xs-abogados.com")
+  phoneDisplay    String   @default("+52 33 2960 2391")
+  phoneE164       String   @default("+523329602391")
+  whatsappNumber  String   @default("523329602391")
+  whatsappMessage String   @default("Hola, me gustaría recibir información sobre los servicios de XS ABOGADOS.")
+  contactEmail    String   @default("contacto@xs-abogados.com")
+  address         String   @default("Torre Celtis, Piso 18, Real de Acueducto 240, Puerta de Hierro, 45116 Zapopan, Jal.")
+  officeHours     String   @default("Lunes a viernes · 09:00–18:00")
+  timezone        String   @default("America/Mexico_City")
+  socialLinks     Json?
+  updatedById     String?
+  updatedAt       DateTime @updatedAt
+  updatedBy       User?    @relation("SettingsUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+}
