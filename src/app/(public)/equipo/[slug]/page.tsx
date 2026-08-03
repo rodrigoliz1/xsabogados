@@ -13,7 +13,7 @@ const appointmentAreaByLawyer: Record<string, string> = {
   "alejandro-guerrero": "litigio-solucion-conflictos",
   "isamar-torres": "bancario-financiero",
   "fernando-velasco": "litigio-solucion-conflictos",
-  "rodrigo-lizarraga": "administrativo-fiscal-constitucional",
+  "rodrigo-lizarraga": "litigio-solucion-conflictos",
   "felipe-ibarra-ibarra": "litigio-solucion-conflictos",
   "jose-luis-ahumada": "bancario-financiero",
 };

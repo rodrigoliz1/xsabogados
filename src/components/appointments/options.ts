@@ -6,10 +6,6 @@ export const appointmentAreas = [
     label: "Litigio & Solución de Conflictos",
   },
   {
-    value: "administrativo-fiscal-constitucional",
-    label: "Administrativo, Fiscal & Constitucional",
-  },
-  {
     value: "recuperacion-cartera-insolvencia",
     label: "Recuperación de Cartera & Reestructuración",
   },

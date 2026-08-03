@@ -18,6 +18,8 @@ export const siteConfig = {
     address:
       process.env.NEXT_PUBLIC_OFFICE_ADDRESS ??
       "Torre Celtis, Piso 18, Real de Acueducto 240, Puerta de Hierro, 45116 Zapopan, Jal.",
+    mapsUrl:
+      "https://www.google.com/maps?vet=10CAAQoqAOahcKEwiYj_jTloOWAxUAAAAAHQAAAAAQCQ..i&rlz=1C5CHFA_enMX1072MX1072&pvq=CgwvZy8xcHR4ODk3d2QiGwoVVG9ycmUgQ2VsdGlzLCBQaXNvIDE4EAIYAw&lqi=ClNUb3JyZSBDZWx0aXMsIFBpc28gMTgsIFJlYWwgZGUgQWN1ZWR1Y3RvIDI0MCwgUHVlcnRhIGRlIEhpZXJybywgNDUxMTYgWmFwb3BhbiwgSmFsLkjsvpLE55WAgAhaaxAAEAEQAhADGAAYARgEGAYYBxgIGAoYCxgMGA0iTXRvcnJlIGNlbHRpcyBwaXNvIDE4IHJlYWwgZGUgYWN1ZWR1Y3RvIDI0MCBwdWVydGEgZGUgaGllcnJvIDQ1MTE2IHphcG9wYW4gamFskgEdZXhlY3V0aXZlX3N1aXRlX3JlbnRhbF9hZ2VuY3k&fvr=1&cs=0&um=1&ie=UTF-8&fb=1&gl=mx&sa=X&geocode=KVfCcJ0BryiEMc9kdhkC5SNh&daddr=Torre+Celtis,+Real+de+Acueducto+240,+Puerta+de+Hierro,+45116+Zapopan,+Jal.",
     schedule: "Lunes a viernes · 09:00–18:00",
   },
   navigation: [

@@ -11,7 +11,7 @@ const SITE_URL = siteConfig.url;
 export const metadata: Metadata = {
   title: "Áreas de práctica | XS ABOGADOS",
   description:
-    "Asesoría corporativa, bancaria y financiera; litigio; derecho administrativo, fiscal y constitucional; recuperación de cartera y reestructuración.",
+    "Asesoría corporativa, bancaria y financiera; litigio civil, mercantil, administrativo, fiscal y constitucional; recuperación de cartera y reestructuración.",
   keywords: [
     "abogados en Guadalajara",
     "abogados corporativos",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Áreas de práctica | XS ABOGADOS",
     description:
-      "Cinco áreas conectadas por una misma forma de trabajar: comprensión, diagnóstico, estrategia, ejecución y seguimiento.",
+      "Cuatro áreas conectadas por una misma forma de trabajar: comprensión, diagnóstico, estrategia, ejecución y seguimiento.",
     url: `${SITE_URL}/areas`,
     type: "website",
   },
@@ -72,7 +72,7 @@ export default function PracticeAreasPage() {
 
       <section className="mx-auto max-w-shell px-5 pb-24 pt-36 sm:px-8 sm:pt-44 lg:px-12 lg:pb-32 lg:pt-52">
         <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">
-          Áreas de práctica / 01—05
+          Áreas de práctica / 01—04
         </p>
         <div className="mt-12 grid gap-10 border-t border-white/15 pt-10 lg:grid-cols-[1.35fr_0.65fr] lg:items-end lg:gap-20">
           <h1 className="font-serif text-[clamp(4.5rem,11vw,10rem)] leading-[0.78] tracking-[-0.065em]">

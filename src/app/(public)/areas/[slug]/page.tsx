@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { PracticeFaqs } from "@/components/practice-areas/PracticeFaqs";
 import { LawyerGrid } from "@/components/team/LawyerGrid";
@@ -14,6 +14,8 @@ import {
 } from "@/data/practice-areas";
 
 const SITE_URL = siteConfig.url;
+const LEGACY_PUBLIC_LAW_SLUG = "administrativo-fiscal-constitucional";
+const DISPUTES_PATH = "/areas/litigio-solucion-conflictos";
 
 type PracticeAreaPageProps = {
   params: Promise<{ slug: string }>;
@@ -27,6 +29,18 @@ export async function generateMetadata({
   params,
 }: PracticeAreaPageProps): Promise<Metadata> {
   const { slug } = await params;
+
+  if (slug === LEGACY_PUBLIC_LAW_SLUG) {
+    const area = getPracticeAreaBySlug("litigio-solucion-conflictos");
+    return area
+      ? {
+          title: `${area.seo.title} | XS ABOGADOS`,
+          description: area.seo.description,
+          alternates: { canonical: `${SITE_URL}${DISPUTES_PATH}` },
+        }
+      : { title: "Litigio & Solución de Conflictos | XS ABOGADOS" };
+  }
+
   const area = getPracticeAreaBySlug(slug);
 
   if (!area) {
@@ -51,6 +65,11 @@ export default async function PracticeAreaPage({
   params,
 }: PracticeAreaPageProps) {
   const { slug } = await params;
+
+  if (slug === LEGACY_PUBLIC_LAW_SLUG) {
+    permanentRedirect(DISPUTES_PATH);
+  }
+
   const area = getPracticeAreaBySlug(slug);
 
   if (!area) notFound();

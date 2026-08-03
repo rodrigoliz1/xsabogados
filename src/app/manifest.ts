@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "XS ABOGADOS",
     short_name: "XS",
-    description: "Estrategia jurídica para decisiones que definen el futuro.",
+    description: "Soluciones jurídicas con visión estratégica..",
     start_url: "/",
     display: "standalone",
     background_color: "#050505",

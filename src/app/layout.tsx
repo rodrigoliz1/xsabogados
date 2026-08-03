@@ -9,7 +9,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: "XS ABOGADOS | Estrategia jurídica en Guadalajara",
+    default: "XS ABOGADOS",
     template: "%s | XS ABOGADOS",
   },
   description: siteConfig.description,
@@ -37,13 +37,13 @@ export const metadata: Metadata = {
     url: siteConfig.url,
     siteName: siteConfig.name,
     title: "XS ABOGADOS | Estrategia jurídica",
-    description: "Estrategia jurídica para decisiones que definen el futuro.",
+    description: "Soluciones jurídicas con visión estratégica..",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "XS ABOGADOS" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "XS ABOGADOS | Estrategia jurídica",
-    description: "Estrategia jurídica para decisiones que definen el futuro.",
+    description: "Soluciones jurídicas con visión estratégica..",
     images: ["/og.png"],
   },
   robots: isVercelPreview()

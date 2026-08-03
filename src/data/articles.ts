@@ -172,8 +172,8 @@ export const articles: readonly Article[] = [
     excerpt:
       "Por qué el análisis de efectos, plazos y medidas cautelares debe comenzar desde la primera noticia de un acto de autoridad.",
     author: "Equipo editorial XS ABOGADOS",
-    practiceArea: "Administrativo, Fiscal & Constitucional",
-    practiceAreaSlug: "administrativo-fiscal-constitucional",
+    practiceArea: "Litigio & Solución de Conflictos",
+    practiceAreaSlug: "litigio-solucion-conflictos",
     publishedAt: "2026-08-02",
     readingTime: "6 min de lectura",
     index: "03",

@@ -25,7 +25,7 @@ export function PortalPreview() {
         <div className="bg-ink-2 p-5 sm:p-7">
           <p className="eyebrow text-paper-quiet">Asunto</p>
           <p className="mt-4 font-serif text-3xl leading-none">
-            Operación Mercurio
+            Estrategia Corporativa
           </p>
           <p className="mt-3 text-xs text-paper-quiet">
             Referencia DEMO-XS-001

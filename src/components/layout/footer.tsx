@@ -14,10 +14,6 @@ const footerAreas = [
   ["Corporativo & Negocios", "/areas/corporativo-negocios"],
   ["Bancario & Financiero", "/areas/bancario-financiero"],
   ["Litigio & Solución de Conflictos", "/areas/litigio-solucion-conflictos"],
-  [
-    "Administrativo, Fiscal & Constitucional",
-    "/areas/administrativo-fiscal-constitucional",
-  ],
   ["Recuperación de Cartera", "/areas/recuperacion-cartera-insolvencia"],
 ] as const;
 
@@ -128,14 +124,22 @@ export function Footer({
           <div>
             <p className="eyebrow text-paper-quiet">Oficina</p>
             <address className="mt-4 max-w-sm not-italic leading-6">
-              {settings.address}
+              <a
+                aria-label="Abrir ubicación de XS ABOGADOS en Google Maps"
+                className="transition hover:text-white"
+                href={siteConfig.contact.mapsUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {settings.address}
+              </a>
             </address>
           </div>
           <div>
             <p className="eyebrow text-paper-quiet">Horario</p>
             <p className="mt-4">{settings.officeHours}</p>
             <p className="mt-2 text-xs">
-              Datos editables mediante configuración.
+              {/* Datos editables mediante configuración. */}
             </p>
           </div>
         </div>

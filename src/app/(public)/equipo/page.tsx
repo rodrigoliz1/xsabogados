@@ -78,9 +78,7 @@ export default function TeamPage() {
         </p>
         <div className="mt-12 grid gap-10 border-t border-white/15 pt-10 lg:grid-cols-[1.35fr_0.65fr] lg:items-end lg:gap-20">
           <h1 className="font-serif text-[clamp(4.5rem,11vw,10rem)] leading-[0.78] tracking-[-0.065em]">
-            Criterio
-            <br />
-            compartido.
+            Nosotros
           </h1>
           <p className="max-w-md pb-2 text-base leading-8 text-paper-muted">
             Un equipo multidisciplinario que conecta análisis, estructura y

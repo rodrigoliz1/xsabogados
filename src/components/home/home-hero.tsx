@@ -49,13 +49,12 @@ export function HomeHero() {
             initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             transition={{ delay: 0.35, duration: 0.7 }}
           >
-            XS ABOGADOS · Estrategia legal contemporánea
+            XS ABOGADOS · Estrategia jurídica · Precisión técnica
           </motion.p>
           <h1 className="mt-7 max-w-[15ch] text-balance font-serif text-[clamp(4.15rem,10.5vw,10rem)] font-normal leading-[0.78] tracking-[-0.065em]">
             {[
-              "Estrategia jurídica",
-              "para decisiones que",
-              "definen el futuro.",
+              "Soluciones jurídicas",
+              "con visión estratégica",
             ].map((line, index) => (
               <span className="block overflow-hidden pb-[0.09em]" key={line}>
                 <motion.span

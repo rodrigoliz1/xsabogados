@@ -218,30 +218,41 @@ export const practiceAreas: readonly PracticeArea[] = [
     shortTitle: "Litigio",
     index: "03",
     shortDescription:
-      "Estrategias para controversias civiles, mercantiles y constitucionales, con lectura procesal y alternativas de negociación.",
+      "Defensa integral en controversias civiles, mercantiles, administrativas, fiscales y constitucionales, con estrategia procesal y alternativas de solución.",
     summary:
-      "Estrategias para controversias civiles, mercantiles y constitucionales, con lectura procesal y alternativas de negociación.",
+      "Defensa integral en controversias civiles, mercantiles, administrativas, fiscales y constitucionales, con estrategia procesal y alternativas de solución.",
     introduction: [
-      "Intervenimos en controversias que requieren una comprensión precisa de los hechos, la documentación y el entorno procesal.",
-      "Cada asunto se analiza para definir una ruta que pueda integrar litigio, negociación extrajudicial o medios alternativos, sin perder de vista los objetivos y riesgos del cliente.",
+      "Intervenimos en controversias entre particulares y en asuntos frente a autoridades que requieren una comprensión precisa de los hechos, la documentación, el marco regulatorio y el entorno procesal.",
+      "La práctica integra litigio civil, mercantil, administrativo, fiscal y constitucional. Cada asunto se analiza para definir una ruta judicial, administrativa, extrajudicial o combinada, con atención a plazos, medidas cautelares, riesgos y objetivos del cliente.",
     ],
     problems: [
       "Incumplimientos contractuales y controversias patrimoniales.",
       "Conflictos civiles o mercantiles entre empresas y particulares.",
-      "Necesidad de medidas cautelares o ejecución de garantías.",
-      "Negociaciones complejas previas o paralelas al litigio.",
-      "Escenarios de insolvencia y prevención de conflictos.",
+      "Actos, resoluciones u omisiones de autoridades administrativas o fiscales.",
+      "Procedimientos sancionadores, créditos fiscales y medios de impugnación.",
+      "Necesidad de suspensión, medidas cautelares o ejecución de garantías.",
+      "Violaciones a derechos que requieren control constitucional o juicio de amparo.",
+      "Negociaciones complejas, mediación y prevención de conflictos.",
     ],
     services: [
       "Litigio civil.",
       "Litigio mercantil.",
-      "Juicio de amparo.",
+      "Litigio administrativo.",
+      "Litigio fiscal.",
       "Controversias contractuales.",
-      "Medidas cautelares.",
+      "Conflictos societarios y patrimoniales.",
+      "Juicio de amparo directo e indirecto.",
+      "Defensa frente a actos de autoridad.",
+      "Juicio contencioso administrativo y de nulidad.",
+      "Recursos administrativos y fiscales.",
+      "Procedimientos administrativos y sancionadores.",
+      "Determinación y defensa de créditos fiscales.",
+      "Análisis constitucional de normas, actos y omisiones.",
+      "Suspensión y medidas cautelares.",
       "Ejecución de garantías.",
       "Negociación extrajudicial.",
-      "Mediación.",
-      "Estrategia preventiva.",
+      "Mediación y métodos alternativos de solución de controversias.",
+      "Estrategia preventiva y gestión de riesgos contenciosos.",
       "Procedimientos de insolvencia.",
     ],
     method: [
@@ -255,7 +266,7 @@ export const practiceAreas: readonly PracticeArea[] = [
         number: "02",
         title: "Diagnóstico procesal",
         description:
-          "Evaluamos vías disponibles, cargas probatorias, plazos, riesgos y posibles medidas de protección.",
+          "Evaluamos competencia, vías disponibles, cargas probatorias, plazos, definitividad, riesgos y posibles medidas cautelares.",
       },
       {
         number: "03",
@@ -294,111 +305,31 @@ export const practiceAreas: readonly PracticeArea[] = [
         answer:
           "Sí. Una intervención temprana permite valorar riesgos, conservar evidencia y explorar soluciones antes de que el conflicto avance.",
       },
+      {
+        question:
+          "¿Atienden asuntos administrativos, fiscales y constitucionales dentro del área de litigio?",
+        answer:
+          "Sí. La práctica de Litigio y Solución de Conflictos comprende defensa frente a actos de autoridad, procedimientos y recursos administrativos o fiscales, juicios de nulidad, amparo y medidas cautelares, según las circunstancias de cada asunto.",
+      },
+      {
+        question: "¿Por qué es importante revisar pronto un acto de autoridad?",
+        answer:
+          "Porque los medios de defensa suelen estar sujetos a plazos y requisitos específicos. Una revisión oportuna permite identificar efectos, vías de impugnación y posibles medidas de protección.",
+      },
     ],
     seo: {
-      title: "Litigio civil y mercantil en Guadalajara | XS ABOGADOS",
+      title: "Litigio y solución de conflictos en Guadalajara",
       description:
-        "Representación y estrategia en litigio civil y mercantil, controversias contractuales, amparo, medidas cautelares y negociación extrajudicial.",
+        "Representación en litigio civil, mercantil, administrativo, fiscal y constitucional; amparo, nulidad, medidas cautelares y negociación extrajudicial.",
       keywords: [
         "litigio civil y mercantil",
         "abogados mercantiles Guadalajara",
+        "litigio administrativo y fiscal",
         "controversias contractuales",
-        "juicio de amparo",
-        "solución de conflictos",
-      ],
-    },
-  },
-  {
-    slug: "administrativo-fiscal-constitucional",
-    title: "Administrativo, Fiscal & Constitucional",
-    shortTitle: "Administrativo",
-    index: "04",
-    shortDescription:
-      "Defensa y análisis estratégico frente a actos de autoridad, procedimientos administrativos y controversias fiscales o constitucionales.",
-    summary:
-      "Defensa y análisis estratégico frente a actos de autoridad, procedimientos administrativos y controversias fiscales o constitucionales.",
-    introduction: [
-      "Atendemos asuntos en los que una actuación, resolución u omisión de autoridad puede afectar derechos, operaciones o patrimonio.",
-      "La práctica articula análisis constitucional, estrategia procesal y comprensión regulatoria para identificar medios de defensa y medidas oportunas en cada caso.",
-    ],
-    problems: [
-      "Actos de autoridad que requieren revisión o defensa inmediata.",
-      "Procedimientos y recursos ante autoridades administrativas.",
-      "Determinaciones o controversias de naturaleza fiscal.",
-      "Necesidad de medidas cautelares o suspensión.",
-      "Evaluación constitucional de normas, resoluciones u omisiones.",
-    ],
-    services: [
-      "Defensa frente a actos de autoridad.",
-      "Juicio de amparo.",
-      "Procedimientos administrativos.",
-      "Recursos administrativos.",
-      "Controversias fiscales.",
-      "Nulidad administrativa.",
-      "Medidas cautelares.",
-      "Análisis constitucional.",
-      "Estrategia regulatoria.",
-      "Protección de derechos frente a autoridades.",
-    ],
-    method: [
-      {
-        number: "01",
-        title: "Revisión del acto",
-        description:
-          "Analizamos la autoridad, el acto reclamado, sus efectos y la documentación disponible.",
-      },
-      {
-        number: "02",
-        title: "Control de plazos",
-        description:
-          "Identificamos términos, requisitos y decisiones urgentes para preservar las vías de defensa disponibles.",
-      },
-      {
-        number: "03",
-        title: "Diseño de la defensa",
-        description:
-          "Construimos argumentos, medios de impugnación y solicitudes cautelares conforme al caso.",
-      },
-      {
-        number: "04",
-        title: "Seguimiento estratégico",
-        description:
-          "Monitoreamos el procedimiento y ajustamos la ruta frente a nuevas actuaciones o resoluciones.",
-      },
-    ],
-    relatedLawyerSlugs: [
-      "rodrigo-lizarraga",
-      "alejandro-guerrero",
-      "victor-silva",
-    ],
-    faqs: [
-      {
-        question:
-          "¿Por qué es importante revisar de inmediato un acto de autoridad?",
-        answer:
-          "Porque los medios de defensa suelen estar sujetos a plazos. Una revisión oportuna permite identificar fechas, efectos y medidas posibles sin prejuzgar sobre el resultado.",
-      },
-      {
-        question: "¿El juicio de amparo procede contra cualquier acto?",
-        answer:
-          "No necesariamente. Su procedencia depende, entre otros elementos, del acto, la autoridad, la afectación y la existencia de otros medios de defensa. Se requiere un análisis particular.",
-      },
-      {
-        question: "¿La estrategia puede incluir recursos administrativos?",
-        answer:
-          "Sí. Según el asunto, pueden evaluarse recursos, juicios de nulidad, amparo u otras vías, así como medidas cautelares relacionadas.",
-      },
-    ],
-    seo: {
-      title: "Derecho administrativo, fiscal y constitucional",
-      description:
-        "Defensa ante actos de autoridad, procedimientos administrativos, controversias fiscales, juicio de amparo y análisis constitucional.",
-      keywords: [
-        "derecho administrativo y fiscal",
         "juicio de amparo",
         "defensa ante actos de autoridad",
         "nulidad administrativa",
-        "abogados constitucionales",
+        "solución de conflictos",
       ],
     },
   },
@@ -406,7 +337,7 @@ export const practiceAreas: readonly PracticeArea[] = [
     slug: "recuperacion-cartera-insolvencia",
     title: "Recuperación de Cartera & Reestructuración",
     shortTitle: "Recuperación",
-    index: "05",
+    index: "04",
     shortDescription:
       "Diagnóstico, negociación y ejecución coordinada para administrar cartera vencida, recuperar activos y ordenar adeudos.",
     summary:

@@ -56,8 +56,7 @@ export default function HomePage() {
           <Reveal>
             <p className="eyebrow text-ink/50">Nuestra posición</p>
             <blockquote className="mt-8 max-w-[17ch] text-balance font-serif text-[clamp(3.4rem,7.5vw,8rem)] leading-[0.86] tracking-[-0.055em]">
-              No reaccionamos ante los problemas. Diseñamos la estrategia antes
-              de que determinen el resultado.
+              Convertimos retos en oportunidades de éxito.
             </blockquote>
           </Reveal>
           <div className="mt-14 grid gap-7 border-t border-black/15 pt-7 md:grid-cols-[1fr_1fr] lg:ml-auto lg:max-w-4xl">
@@ -81,7 +80,7 @@ export default function HomePage() {
             <SectionHeading
               eyebrow="Áreas de práctica"
               invert
-              title="Una lectura jurídica integral del negocio y la controversia."
+              title="Servicio jurídico integral."
             />
             <ButtonLink href="/areas" variant="outline">
               Explorar todas las áreas{" "}
@@ -111,7 +110,7 @@ export default function HomePage() {
             <div>
               <Reveal>
                 <h2 className="max-w-[15ch] text-balance font-serif text-5xl leading-[0.95] tracking-[-0.045em] sm:text-6xl lg:text-8xl">
-                  Especialización que dialoga. Estrategia que se sostiene.
+                  Estrategia jurídica para decisiones complejas.
                 </h2>
               </Reveal>
               <div className="mt-10 grid gap-8 border-t border-black/15 pt-8 sm:grid-cols-2">
@@ -122,9 +121,7 @@ export default function HomePage() {
                 </p>
                 <div>
                   <p className="text-base leading-7 text-ink/70">
-                    Nuestra nueva etapa institucional reúne experiencia
-                    jurídica, especialización y una visión contemporánea del
-                    servicio legal.
+                    Nuestra práctica integra experiencia en derecho corporativo, bancario, financiero, civil, mercantil, administrativo y constitucional para responder con eficacia a los desafíos legales actuales.
                   </p>
                   <Link
                     className="mt-7 inline-flex items-center gap-2 border-b border-black/30 pb-1 text-sm font-semibold"
@@ -146,7 +143,7 @@ export default function HomePage() {
             description="Cada etapa convierte información dispersa en decisiones claras, responsables y verificables."
             eyebrow="Método de trabajo"
             invert
-            title="Un proceso diseñado para mantener el control."
+            title="El derecho exige precisión. Cada decisión también."
           />
           <ol className="mt-16 grid border-l border-t border-white/10 sm:grid-cols-2 lg:grid-cols-5">
             {method.map(([number, title, description]) => (
@@ -174,7 +171,7 @@ export default function HomePage() {
               description="Socios que combinan práctica transaccional, financiera y contenciosa para leer cada asunto desde más de una perspectiva."
               eyebrow="Equipo"
               invert
-              title="La estrategia tiene responsables visibles."
+              title="Abogados Especializados."
             />
             <ButtonLink href="/equipo" variant="outline">
               Conocer al equipo{" "}
@@ -238,19 +235,7 @@ export default function HomePage() {
         </Container>
       </section>
 
-      <section className="relative overflow-hidden bg-paper py-24 text-ink lg:py-40">
-        <Container>
-          <div className="grid gap-12 lg:grid-cols-[1fr_auto] lg:items-end">
-            <h2 className="max-w-[14ch] text-balance font-serif text-[clamp(4rem,9vw,9rem)] leading-[0.84] tracking-[-0.06em]">
-              Los asuntos complejos requieren claridad desde el primer paso.
-            </h2>
-            <ButtonLink href="/agenda" size="lg" variant="dark">
-              Agenda una consulta{" "}
-              <ArrowUpRight aria-hidden="true" className="size-4" />
-            </ButtonLink>
-          </div>
-        </Container>
-      </section>
+
     </>
   );
 }

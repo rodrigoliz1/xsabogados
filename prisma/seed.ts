@@ -52,38 +52,28 @@ const practiceAreas = [
     slug: "litigio-solucion-conflictos",
     name: "Litigio & Solución de Conflictos",
     shortDescription:
-      "Estrategia, negociación y representación en controversias civiles y mercantiles.",
-    body: "Diseñamos estrategias para prevenir, gestionar y resolver controversias, considerando tanto la vía judicial como mecanismos de negociación y solución alternativa.",
+      "Defensa integral en controversias civiles, mercantiles, administrativas, fiscales y constitucionales.",
+    body: "Diseñamos estrategias para prevenir, gestionar y resolver controversias entre particulares y frente a autoridades, integrando litigio, medios de impugnación, medidas cautelares, negociación y mecanismos alternativos de solución.",
     services: [
       "Litigio civil",
       "Litigio mercantil",
-      "Juicio de amparo",
+      "Litigio administrativo",
+      "Litigio fiscal",
       "Controversias contractuales",
-      "Medidas cautelares",
+      "Conflictos societarios y patrimoniales",
+      "Juicio de amparo directo e indirecto",
+      "Defensa frente a actos de autoridad",
+      "Juicio contencioso administrativo y de nulidad",
+      "Recursos administrativos y fiscales",
+      "Procedimientos administrativos y sancionadores",
+      "Determinación y defensa de créditos fiscales",
+      "Análisis constitucional de normas, actos y omisiones",
+      "Suspensión y medidas cautelares",
       "Ejecución de garantías",
       "Negociación extrajudicial",
-      "Mediación",
-      "Estrategia preventiva",
+      "Mediación y métodos alternativos de solución de controversias",
+      "Estrategia preventiva y gestión de riesgos contenciosos",
       "Procedimientos de insolvencia",
-    ],
-  },
-  {
-    slug: "administrativo-fiscal-constitucional",
-    name: "Administrativo, Fiscal & Constitucional",
-    shortDescription:
-      "Defensa estratégica frente a actos de autoridad y controversias administrativas o fiscales.",
-    body: "Analizamos actos de autoridad y diseñamos rutas de defensa administrativa, fiscal y constitucional con atención a sus efectos inmediatos y de largo plazo.",
-    services: [
-      "Defensa frente a actos de autoridad",
-      "Juicio de amparo",
-      "Procedimientos administrativos",
-      "Recursos administrativos",
-      "Controversias fiscales",
-      "Nulidad administrativa",
-      "Medidas cautelares",
-      "Análisis constitucional",
-      "Estrategia regulatoria",
-      "Protección de derechos frente a autoridades",
     ],
   },
   {
@@ -158,10 +148,7 @@ const lawyers = [
       "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
     image: "/images/team/rodrigo-lizarraga.webp",
     bio: "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara. Su práctica se desarrolla en el área de litigio y solución de conflictos, con especial interés en derecho administrativo, fiscal y constitucional. Participa en el análisis de asuntos, investigación jurídica, elaboración de proyectos, organización de expedientes y seguimiento de procedimientos. Su formación se caracteriza por el compromiso con el aprendizaje continuo, la precisión en la redacción y el desarrollo de estrategias jurídicas sólidas. Su enfoque lo posiciona como un profesional en desarrollo con alto potencial en el ámbito del litigio especializado.",
-    areas: [
-      "litigio-solucion-conflictos",
-      "administrativo-fiscal-constitucional",
-    ],
+    areas: ["litigio-solucion-conflictos"],
   },
   {
     slug: "felipe-ibarra-ibarra",
@@ -277,6 +264,11 @@ async function main() {
     });
     areaBySlug.set(area.slug, saved);
   }
+
+  await prisma.practiceArea.updateMany({
+    where: { slug: "administrativo-fiscal-constitucional" },
+    data: { active: false },
+  });
 
   const lawyerBySlug = new Map<string, { id: string }>();
   for (const [index, lawyer] of lawyers.entries()) {
@@ -441,7 +433,7 @@ async function main() {
         "Importancia de una estrategia constitucional ante actos de autoridad",
       excerpt:
         "La oportunidad, la procedencia y los efectos buscados deben evaluarse desde el inicio de una defensa.",
-      area: "administrativo-fiscal-constitucional",
+      area: "litigio-solucion-conflictos",
       body: "Este artículo de demostración aborda factores generales para analizar un acto de autoridad y sus posibles medios de defensa. Su contenido no constituye asesoría jurídica para un caso particular.",
     },
   ] as const;

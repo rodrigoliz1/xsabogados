@@ -1,5 +1,4 @@
-export type TeamFilterKey =
-  "partners" | "corporate-finance" | "disputes" | "public-law";
+export type TeamFilterKey = "partners" | "corporate-finance" | "disputes";
 
 export type Lawyer = {
   slug: string;
@@ -28,10 +27,6 @@ export const teamFilters: readonly {
     label: "Corporativo, Bancario & Financiero",
   },
   { key: "disputes", label: "Litigio & Solución de Conflictos" },
-  {
-    key: "public-law",
-    label: "Administrativo, Fiscal & Constitucional",
-  },
 ] as const;
 
 export const lawyers: readonly Lawyer[] = [
@@ -157,11 +152,8 @@ export const lawyers: readonly Lawyer[] = [
     initials: "RL",
     role: "Asociado Senior",
     primaryArea: "Litigio & Solución de Conflictos",
-    areas: [
-      "Litigio & Solución de Conflictos",
-      "Derecho Administrativo, Fiscal & Constitucional",
-    ],
-    filters: ["disputes", "public-law"],
+    areas: ["Litigio & Solución de Conflictos"],
+    filters: ["disputes"],
     biography: [
       "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
       "Su práctica se desarrolla en el área de litigio y solución de conflictos, con especial interés en derecho administrativo, fiscal y constitucional.",
