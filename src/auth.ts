@@ -3,7 +3,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
 import { db } from "@/lib/db";
+import { isDemoAuthAllowed, isPublicProduction } from "@/lib/environment";
 import { verifyPassword } from "@/lib/security/passwords";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { loginSchema } from "@/lib/validation/auth";
 
 type SessionRole = "CLIENT" | "LAWYER" | "ADMIN";
@@ -34,23 +36,15 @@ declare module "@auth/core/jwt" {
   }
 }
 
-function isProductionRuntime() {
-  return (
-    process.env.NODE_ENV === "production" &&
-    process.env.VERCEL_ENV !== "preview"
-  );
-}
-
 function demoLoginAllowed(email: string) {
   if (!email.endsWith("@xs-abogados.local")) return true;
-  if (process.env.NODE_ENV === "production") return false;
-  return process.env.ENABLE_DEMO_AUTH !== "false";
+  return isDemoAuthAllowed();
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret:
     process.env.AUTH_SECRET ||
-    (isProductionRuntime()
+    (isPublicProduction()
       ? undefined
       : "xs-abogados-development-auth-secret-change-in-production"),
   trustHost: true,
@@ -69,10 +63,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Correo", type: "email" },
         password: { label: "Contraseña", type: "password" },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, request) => {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success || !demoLoginAllowed(parsed.data.email))
           return null;
+
+        try {
+          await enforceRateLimit({
+            request,
+            scope: "credentials-login",
+            limit: 8,
+            windowMs: 15 * 60 * 1000,
+            secondaryKey: parsed.data.email,
+          });
+        } catch {
+          return null;
+        }
 
         const user = await db.user.findUnique({
           where: { email: parsed.data.email },

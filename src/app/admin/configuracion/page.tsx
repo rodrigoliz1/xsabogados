@@ -161,8 +161,14 @@ export default async function SettingsPage({
       icon: Mail,
       title: "Correo transaccional",
       configured:
-        process.env.EMAIL_PROVIDER === "resend" &&
-        Boolean(process.env.RESEND_API_KEY),
+        (process.env.EMAIL_PROVIDER === "brevo" &&
+          Boolean(
+            process.env.BREVO_API_KEY &&
+            process.env.EMAIL_FROM_ADDRESS &&
+            process.env.EMAIL_FROM_NAME,
+          )) ||
+        (process.env.EMAIL_PROVIDER === "resend" &&
+          Boolean(process.env.RESEND_API_KEY)),
       description: "Confirmaciones, recuperación de acceso y avisos.",
     },
     {

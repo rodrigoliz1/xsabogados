@@ -17,7 +17,7 @@ Navegador
       → servicios de dominio
         → repositorios Prisma
         → CalendarProvider / EmailProvider / StorageProvider
-          → PostgreSQL / Google / Cal.com / Resend / S3
+          → Neon PostgreSQL / Google Calendar / Brevo / S3
 ```
 
 `src/app` contiene rutas y composición. `src/components` contiene UI reutilizable. `src/data` mantiene contenido institucional editable. `src/lib` implementa infraestructura y validación. `src/server` concentra reglas de negocio y autorización. `prisma` define datos y seed.
@@ -34,7 +34,11 @@ Navegador
 
 La disponibilidad combina reglas configuradas, bloqueos, eventos del proveedor y reservas existentes. Una cita de 45 minutos más intervalo se descompone en segmentos; la unicidad de `resourceKey + startsAt` impide que dos solicitudes concurrentes reserven el mismo horario.
 
-El evento externo se crea después de reservar localmente. Si Google o Cal.com falla, la cita conserva estado de sincronización pendiente para revisión, sin afirmar confirmación definitiva.
+El evento externo se crea después de reservar localmente. Si Google falla, la cita conserva estado de sincronización pendiente para revisión, sin afirmar confirmación definitiva. El proveedor mock registra una solicitud recibida y nunca simula una confirmación externa.
+
+## Despliegue
+
+La aplicación completa vive en Vercel. `DATABASE_URL` conecta el runtime al pool de Neon y `DIRECT_URL` se reserva para migraciones. Brevo se consume mediante su SDK oficial exclusivamente desde código de servidor. No existe un servicio de Render ni un backend separado.
 
 ## Degradación local
 

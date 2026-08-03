@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { siteConfig } from "@/config/site";
+import { isVercelPreview } from "@/lib/environment";
 
 import "./globals.css";
 
@@ -45,7 +46,9 @@ export const metadata: Metadata = {
     description: "Estrategia jurídica para decisiones que definen el futuro.",
     images: ["/og.png"],
   },
-  robots: { index: true, follow: true },
+  robots: isVercelPreview()
+    ? { index: false, follow: false, nocache: true }
+    : { index: true, follow: true },
 };
 
 export const viewport: Viewport = {

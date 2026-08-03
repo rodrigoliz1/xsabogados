@@ -2,6 +2,7 @@ import "server-only";
 
 import { GoogleCalendarProvider } from "./google";
 import { MockCalendarProvider } from "./mock";
+import { isMockCalendarAllowed } from "@/lib/environment";
 
 export * from "./dates";
 export * from "./slots";
@@ -10,10 +11,7 @@ export * from "./types";
 export function getCalendarProvider() {
   const provider = process.env.CALENDAR_PROVIDER?.toLowerCase() || "mock";
   if (provider === "mock") {
-    if (
-      process.env.NODE_ENV === "production" &&
-      process.env.VERCEL_ENV !== "preview"
-    ) {
+    if (!isMockCalendarAllowed()) {
       throw new Error(
         "CALENDAR_PROVIDER=mock no está permitido en producción.",
       );

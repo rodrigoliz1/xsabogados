@@ -11,6 +11,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  MailWarning,
   Menu,
   Settings2,
   ShieldCheck,
@@ -33,6 +34,7 @@ const navigation = [
   { href: "/admin/equipo", label: "Equipo", icon: UserRoundCog },
   { href: "/admin/articulos", label: "Artículos", icon: BookOpenText },
   { href: "/admin/formularios", label: "Formularios", icon: ClipboardList },
+  { href: "/admin/correos", label: "Correos", icon: MailWarning },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings2 },
 ];
 

@@ -1,10 +1,12 @@
+import { getSiteUrl } from "@/lib/site-url";
+
 export const siteConfig = {
   name: "XS ABOGADOS",
   shortName: "XS",
   legalName: "XS ABOGADOS",
   description:
     "Firma jurídica en Guadalajara enfocada en asuntos corporativos, bancarios, financieros y controversias complejas.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://xs-abogados.com",
+  url: getSiteUrl(),
   locale: "es_MX",
   contact: {
     phoneDisplay: process.env.NEXT_PUBLIC_PHONE_DISPLAY ?? "+52 33 2960 2391",

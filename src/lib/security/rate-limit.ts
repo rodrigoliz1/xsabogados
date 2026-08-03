@@ -3,10 +3,12 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { db } from "@/lib/db";
+import { isPublicProduction } from "@/lib/environment";
 
 type MemoryBucket = { count: number; expiresAt: number };
 const globalForRateLimit = globalThis as unknown as {
   xsRateLimits?: Map<string, MemoryBucket>;
+  xsRateLimitWarningShown?: boolean;
 };
 const memoryBuckets =
   globalForRateLimit.xsRateLimits ?? new Map<string, MemoryBucket>();
@@ -75,11 +77,35 @@ export async function enforceRateLimit(input: {
   const windowStartMs = Math.floor(now / input.windowMs) * input.windowMs;
   const windowStart = new Date(windowStartMs);
   const expiresAt = new Date(windowStartMs + input.windowMs);
+  const provider =
+    process.env.RATE_LIMIT_PROVIDER?.trim().toLowerCase() ||
+    (process.env.DATABASE_URL?.trim() ? "database" : "memory");
+  if (!["memory", "database"].includes(provider)) {
+    throw new Error(`RATE_LIMIT_PROVIDER no soportado: ${provider}`);
+  }
 
-  if (
-    process.env.NODE_ENV !== "production" &&
-    !process.env.DATABASE_URL?.trim()
-  ) {
+  if (provider === "memory") {
+    if (isPublicProduction() && !globalForRateLimit.xsRateLimitWarningShown) {
+      console.warn(
+        "RATE_LIMIT_PROVIDER=memory no ofrece límites globales entre funciones.",
+      );
+      globalForRateLimit.xsRateLimitWarningShown = true;
+    }
+    memoryLimit(
+      `${input.scope}:${keyHash}:${windowStartMs}`,
+      input.limit,
+      input.windowMs,
+      now,
+    );
+    return;
+  }
+
+  if (!process.env.DATABASE_URL?.trim()) {
+    if (isPublicProduction()) {
+      throw new Error(
+        "DATABASE_URL es obligatoria para RATE_LIMIT_PROVIDER=database.",
+      );
+    }
     memoryLimit(
       `${input.scope}:${keyHash}:${windowStartMs}`,
       input.limit,

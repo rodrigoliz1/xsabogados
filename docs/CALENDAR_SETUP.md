@@ -9,6 +9,8 @@ NEXT_PUBLIC_CALENDAR_PROVIDER=mock
 
 El proveedor mock genera horarios de lunes a viernes, 09:00–18:00, en `America/Mexico_City`, con consultas de 45 minutos e intervalo de 15 minutos. Las validaciones rechazan fechas pasadas y colisiones.
 
+El mock está permitido en desarrollo local y cuando `VERCEL_ENV=preview`. Se bloquea cuando `VERCEL_ENV=production`. Las citas mock se muestran como solicitudes recibidas y requieren confirmación manual.
+
 Con PostgreSQL, `/admin/disponibilidad` permite modificar la regla global de lunes a viernes y crear o eliminar bloqueos excepcionales. Sin `DATABASE_URL`, la agenda pública usa memoria volátil y conserva los mismos valores predeterminados durante la sesión del servidor.
 
 ## Google Calendar
@@ -30,7 +32,7 @@ GOOGLE_CALENDAR_ID=
 
 La cuenta debe tener el menor alcance necesario. No utilices calendarios personales. Verifica zona horaria, permisos, renovación del token y comportamiento cuando Google no responde.
 
-## Cal.com
+## Cal.com (alternativa futura)
 
 ```env
 CALENDAR_PROVIDER=calcom
@@ -39,6 +41,8 @@ CALCOM_EVENT_TYPE_ID=
 ```
 
 Configura el tipo de evento con la misma duración, zona horaria y reglas del sitio. Antes de producción, implementa o valida el adaptador, webhooks, autenticidad de firmas y reconciliación de cancelaciones.
+
+El adaptador Cal.com no forma parte del primer despliegue funcional. Production debe utilizar Google hasta completar y probar esa integración.
 
 ## Confirmación, cancelación y reprogramación
 

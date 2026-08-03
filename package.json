@@ -18,7 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "admin:create": "tsx scripts/create-admin.ts"
   },
   "keywords": [
     "xs-abogados",
@@ -27,9 +28,13 @@
   ],
   "author": "XS ABOGADOS",
   "license": "UNLICENSED",
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
     "@fontsource/cormorant-garamond": "^5.3.0",
+    "@getbrevo/brevo": "^6.0.2",
     "@hookform/resolvers": "^5.7.1",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",

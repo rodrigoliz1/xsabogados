@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
@@ -510,6 +511,7 @@ model EmailOutbox {
   attempts   Int                 @default(0)
   providerId String?
   lastError  String?
+  lastAttemptAt DateTime?
   createdAt  DateTime            @default(now())
   sentAt     DateTime?
 

@@ -1,53 +1,79 @@
-# Despliegue
+# Despliegue en Vercel
 
-## Vercel
+## Arquitectura
 
-1. Crear un repositorio privado y proteger la rama principal.
-2. Importarlo en Vercel con el preset Next.js.
-3. Configurar Node.js 22 o superior y `npm run build`.
-4. Crear PostgreSQL administrado con respaldo y cifrado.
-5. Añadir variables para Production, Preview y Development con valores separados.
-6. Ejecutar `npm run db:deploy` en una tarea controlada antes de servir una versión que dependa de una migración.
-7. Confirmar que `ENABLE_DEMO_AUTH=false`, `CALENDAR_PROVIDER` y `EMAIL_PROVIDER` no sean `mock`, y que `STORAGE_PROVIDER` no sea `local`.
-8. Probar el deployment en Preview y promoverlo después de la revisión.
+- Vercel ejecuta Next.js, Route Handlers, Server Actions, autenticación, agenda, portal y administración.
+- Neon proporciona PostgreSQL.
+- Prisma administra el esquema y las consultas.
+- Brevo entrega correo transaccional.
+- Google Calendar sincroniza las citas de producción.
 
-## Dominio
+No se requiere Render ni un backend independiente.
 
-1. Añadir `xs-abogados.com` y `www.xs-abogados.com` en Vercel.
-2. Elegir `https://xs-abogados.com` como canonical.
-3. Redirigir `www` al dominio principal.
-4. Configurar en el registrador únicamente los registros indicados por Vercel.
-5. Esperar propagación y verificar certificado HTTPS.
-6. Añadir la propiedad a Google Search Console, validar `sitemap.xml` y solicitar indexación.
+## Primer Preview
 
-Los cambios DNS requieren acceso al registrador y autorización expresa; el proyecto no los ejecuta.
+1. Importe el repositorio de GitHub en Vercel.
+2. Confirme Framework `Next.js` y Root Directory `./`.
+3. Use Install Command `npm ci`, Build Command `npm run build` y Node.js `22.x`.
+4. No configure Output Directory.
+5. Cree una rama o base Preview en Neon y añada su URL pooled como `DATABASE_URL` y la directa como `DIRECT_URL`.
+6. Añada un `AUTH_SECRET` exclusivo de Preview.
+7. Configure Brevo o utilice sandbox. `EMAIL_PROVIDER=brevo` es la validación recomendada.
+8. Use `CALENDAR_PROVIDER=mock` y `NEXT_PUBLIC_CALENDAR_PROVIDER=mock`.
+9. Active `ENABLE_DEMO_AUTH=true` solo si el borrador necesita cuentas demo.
+10. Ejecute `npm run db:deploy` deliberadamente contra Neon Preview.
+11. Despliegue y pruebe formularios, citas, correo, login, roles y móvil.
 
-## Correo
+Vercel Preview se ejecuta con `NODE_ENV=production`, pero la aplicación usa `VERCEL_ENV=preview` para permitir calendario y autenticación demo. El Preview incluye `noindex, nofollow`.
 
-1. Verificar `xs-abogados.com` en Resend.
-2. Configurar SPF, DKIM y, cuando proceda, DMARC.
-3. Crear un remitente transaccional y establecer `EMAIL_FROM`.
-4. Confirmar `CONTACT_RECIPIENT_EMAIL`.
-5. Probar recepción, respuesta automática y manejo de rebotes sin incluir información sensible.
+## Production
 
-## PostgreSQL
+1. Cree o seleccione Neon Production, separado de Preview.
+2. Configure `DATABASE_URL`, `DIRECT_URL` y un `AUTH_SECRET` distinto.
+3. Configure `EMAIL_PROVIDER=brevo`, remitente verificado y sandbox desactivado.
+4. Configure `CALENDAR_PROVIDER=google` y las credenciales correspondientes.
+5. Configure `STORAGE_PROVIDER=s3` antes de habilitar documentos.
+6. Establezca `ENABLE_DEMO_AUTH=false` y `ALLOW_DATABASE_SEED=false`.
+7. Ejecute `npm run db:deploy` desde una operación controlada.
+8. Despliegue Production y realice pruebas de humo.
+9. Añada `xs-abogados.com` y `www.xs-abogados.com`; redirija `www` al canonical.
+10. Configure únicamente los registros DNS indicados por Vercel.
+11. Verifique HTTPS, sitemap, Search Console, Brevo, Neon y permisos del portal.
 
-- Habilitar copias de seguridad y recuperación a un punto en el tiempo.
-- Restringir acceso por red cuando el proveedor lo permita.
-- Usar una cuenta de runtime sin permisos administrativos innecesarios.
-- Revisar migraciones SQL antes de desplegarlas.
-- Probar restauración periódicamente.
+## Variables principales por entorno
 
-## Verificación de lanzamiento
+| Variable                        | Preview                           | Production                | Secreto |
+| ------------------------------- | --------------------------------- | ------------------------- | ------- |
+| `DATABASE_URL`                  | Neon Preview pooled               | Neon Production pooled    | Sí      |
+| `DIRECT_URL`                    | Neon Preview directa              | Neon Production directa   | Sí      |
+| `AUTH_SECRET`                   | Valor exclusivo                   | Valor exclusivo distinto  | Sí      |
+| `NEXT_PUBLIC_SITE_URL`          | Omitir para inferir o URL Preview | `https://xs-abogados.com` | No      |
+| `EMAIL_PROVIDER`                | `brevo`                           | `brevo`                   | No      |
+| `BREVO_API_KEY`                 | Clave Preview/sandbox             | Clave Production          | Sí      |
+| `EMAIL_FROM_ADDRESS`            | Remitente verificado              | Remitente verificado      | No      |
+| `EMAIL_FROM_NAME`               | `XS ABOGADOS`                     | `XS ABOGADOS`             | No      |
+| `CONTACT_RECIPIENT_EMAIL`       | Bandeja de prueba                 | Bandeja institucional     | No      |
+| `CALENDAR_PROVIDER`             | `mock`                            | `google`                  | No      |
+| `NEXT_PUBLIC_CALENDAR_PROVIDER` | `mock`                            | `google`                  | No      |
+| `ENABLE_DEMO_AUTH`              | Opcional                          | `false`                   | No      |
+| `ALLOW_DATABASE_SEED`           | `false`                           | `false`                   | No      |
+| `RATE_LIMIT_PROVIDER`           | `database` o `memory`             | `database`                | No      |
+| `RATE_LIMIT_SALT`               | Valor exclusivo                   | Valor exclusivo           | Sí      |
+| `STORAGE_PROVIDER`              | `local` o `s3`                    | `s3`                      | No      |
 
-- Página pública, 404, sitemap, robots, canonical y Open Graph.
-- Contacto, agenda, cancelación/reprogramación y correos.
-- Login, logout, recuperación y bloqueo de cuenta.
-- Matriz `CLIENT`/`LAWYER`/`ADMIN` y pruebas IDOR.
-- Descarga privada y límites de archivo.
-- Vista móvil, teclado, contraste y reduced motion.
-- Rate limiting, cookies seguras, logs sin datos personales y alertas operativas.
+Las credenciales de Google, S3 y Brevo siempre son privadas. `VERCEL_ENV`, `VERCEL_URL` y `VERCEL_PROJECT_PRODUCTION_URL` son administradas por Vercel.
 
-## Redirección del sitio anterior
+## Migraciones
 
-Las redirecciones entre dominios deben configurarse en el hosting de `ariassilva.com` o cuando ese dominio apunte al nuevo proyecto. Mapeos mínimos: `/nosotros/` a `/equipo`, `/areas-de-especializacion/` a `/areas`, `/contacto/` a `/contacto` y `/aviso-de-privacidad/` a su equivalente. El área inmobiliaria antigua debe dirigir a `/areas` hasta que la firma confirme si continúa vigente.
+```bash
+npm run db:generate
+npm run db:deploy
+```
+
+El build solo genera Prisma Client. No ejecuta seed, `db push`, `migrate dev` ni migraciones remotas.
+
+## Dominio anterior
+
+Las redirecciones desde `ariassilva.com` deben configurarse en su hosting o DNS autorizado. Mapeos mínimos: `/nosotros/` a `/equipo`, `/areas-de-especializacion/` a `/areas`, `/contacto/` a `/contacto` y `/aviso-de-privacidad/` a su equivalente.
+
+Consulte [VERCEL_SETUP.md](./VERCEL_SETUP.md), [NEON_SETUP.md](./NEON_SETUP.md), [BREVO_SETUP.md](./BREVO_SETUP.md) y [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md).

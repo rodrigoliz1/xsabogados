@@ -3,11 +3,13 @@ node_modules/
 .next/
 out/
 coverage/
+playwright-report/
+test-results/
 
 # Entorno y datos locales
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.db
 *.db-journal
 prisma/dev.db*
@@ -17,7 +19,11 @@ prisma/dev.db*
 .vercel/
 .DS_Store
 *.log
+logs/
 
 # Archivos privados de desarrollo
 storage-private/
+storage-local/
+uploads/
+private-uploads/
 *.tsbuildinfo

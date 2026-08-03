@@ -1,17 +1,16 @@
 import { TokenType } from "@prisma/client";
 
 import { db } from "@/lib/db";
-import { escapeEmailHtml, sendTrackedEmail } from "@/lib/email";
+import { renderTransactionalEmail, sendTrackedEmail } from "@/lib/email";
+import { isDemoAuthAllowed } from "@/lib/environment";
+import { getSiteUrl } from "@/lib/site-url";
 import { hashPassword } from "@/lib/security/passwords";
+import { isPasswordResetTokenUsable } from "@/lib/security/password-reset";
 import { createSecureToken, hashToken } from "@/lib/security/tokens";
 import { ServiceError } from "@/server/services/errors";
 
 function demoAccountBlocked(email: string) {
-  return (
-    email.endsWith("@xs-abogados.local") &&
-    (process.env.NODE_ENV === "production" ||
-      process.env.ENABLE_DEMO_AUTH === "false")
-  );
+  return email.endsWith("@xs-abogados.local") && !isDemoAuthAllowed();
 }
 
 export async function requestPasswordReset(email: string) {
@@ -31,21 +30,29 @@ export async function requestPasswordReset(email: string) {
       expiresAt: new Date(Date.now() + 60 * 60 * 1000),
     },
   });
-  const resetUrl = new URL(
-    "/portal/restablecer",
-    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-  );
+  const resetUrl = new URL("/portal/restablecer", getSiteUrl());
   resetUrl.searchParams.set("token", token);
+  const resetEmail = renderTransactionalEmail({
+    eyebrow: "Acceso privado",
+    title: "Restablecimiento de contraseña",
+    greeting: `Hola ${user.name},`,
+    paragraphs: [
+      "Recibimos una solicitud para restablecer la contraseña de su cuenta.",
+      "El enlace vence en una hora y solo puede utilizarse una vez. Si usted no hizo esta solicitud, ignore este mensaje.",
+    ],
+    action: {
+      label: "Restablecer contraseña",
+      url: resetUrl.toString(),
+    },
+    notice:
+      "Este mensaje contiene un enlace de seguridad. No lo comparta ni reenvíe.",
+  });
   await sendTrackedEmail({
     to: user.email,
     subject: "Restablece tu acceso a XS ABOGADOS",
     template: "password-reset",
-    text: `Solicitaste restablecer tu contraseña. La liga vence en una hora: ${resetUrl.toString()}`,
-    html: `<p>Hola ${escapeEmailHtml(
-      user.name,
-    )},</p><p>Solicitaste restablecer tu contraseña. Esta liga vence en una hora.</p><p><a href="${escapeEmailHtml(
-      resetUrl.toString(),
-    )}">Restablecer contraseña</a></p>`,
+    ...resetEmail,
+    tags: ["security", "password-reset"],
   }).catch(() => undefined);
 }
 
@@ -64,12 +71,16 @@ export async function resetPassword(token: string, password: string) {
   });
   if (
     !actionToken ||
-    !actionToken.userId ||
-    actionToken.type !== TokenType.PASSWORD_RESET ||
-    actionToken.usedAt ||
-    actionToken.expiresAt <= new Date() ||
+    !isPasswordResetTokenUsable(actionToken) ||
     demoAccountBlocked(actionToken.email)
   ) {
+    throw new ServiceError(
+      "La liga es inválida o ha vencido.",
+      400,
+      "INVALID_RESET_TOKEN",
+    );
+  }
+  if (!actionToken?.userId) {
     throw new ServiceError(
       "La liga es inválida o ha vencido.",
       400,

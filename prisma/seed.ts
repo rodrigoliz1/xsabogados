@@ -4,9 +4,9 @@ import { hash } from "bcryptjs";
 const prisma = new PrismaClient();
 
 const DEMO_PASSWORDS = {
-  admin: process.env.DEMO_ADMIN_PASSWORD || "XS-Admin-2026!",
-  client: process.env.DEMO_CLIENT_PASSWORD || "XS-Cliente-2026!",
-  lawyer: process.env.DEMO_LAWYER_PASSWORD || "XS-Abogado-2026!",
+  admin: process.env.DEMO_ADMIN_PASSWORD,
+  client: process.env.DEMO_CLIENT_PASSWORD,
+  lawyer: process.env.DEMO_LAWYER_PASSWORD,
 } as const;
 
 const practiceAreas = [
@@ -212,12 +212,23 @@ async function upsertDemoUser(input: {
 }
 
 async function main() {
-  if (
-    process.env.NODE_ENV === "production" ||
-    process.env.VERCEL_ENV === "production"
-  ) {
+  if (process.env.VERCEL_ENV === "production") {
     throw new Error(
       "El seed DEMO está deshabilitado permanentemente en producción.",
+    );
+  }
+  if (process.env.ALLOW_DATABASE_SEED !== "true") {
+    throw new Error(
+      "Define ALLOW_DATABASE_SEED=true de forma explícita para ejecutar el seed DEMO.",
+    );
+  }
+  if (
+    !DEMO_PASSWORDS.admin ||
+    !DEMO_PASSWORDS.client ||
+    !DEMO_PASSWORDS.lawyer
+  ) {
+    throw new Error(
+      "Configura DEMO_ADMIN_PASSWORD, DEMO_CLIENT_PASSWORD y DEMO_LAWYER_PASSWORD antes del seed.",
     );
   }
 
@@ -466,9 +477,7 @@ async function main() {
   });
 
   console.info("Seed DEMO creado. Nunca use estas cuentas en producción.");
-  console.info(`ADMIN  admin@xs-abogados.local / ${DEMO_PASSWORDS.admin}`);
-  console.info(`CLIENT cliente@xs-abogados.local / ${DEMO_PASSWORDS.client}`);
-  console.info(`LAWYER abogado@xs-abogados.local / ${DEMO_PASSWORDS.lawyer}`);
+  console.info("Las contraseñas no se muestran en la salida del proceso.");
 }
 
 main()

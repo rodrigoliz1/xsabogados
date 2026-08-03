@@ -12,7 +12,8 @@ import {
   reservationSlotStarts,
 } from "@/lib/calendar";
 import { db } from "@/lib/db";
-import { escapeEmailHtml, sendTrackedEmail } from "@/lib/email";
+import { renderTransactionalEmail, sendTrackedEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-url";
 import {
   createPublicReference,
   createSecureToken,
@@ -50,7 +51,7 @@ export async function createAppointment(input: AppointmentInput) {
       assignedProfessional: Boolean(input.lawyerId),
       provider: "development-memory",
     });
-    return { reference: result.reference, status: AppointmentStatus.CONFIRMED };
+    return { reference: result.reference, status: AppointmentStatus.REQUESTED };
   }
   const [practiceArea, availability] = await Promise.all([
     db.practiceArea.findFirst({
@@ -109,28 +110,41 @@ export async function createAppointment(input: AppointmentInput) {
     throw error;
   }
 
-  let status: AppointmentStatus = AppointmentStatus.CONFIRMED;
+  let status: AppointmentStatus = AppointmentStatus.REQUESTED;
   try {
     const calendar = getCalendarProvider();
-    const event = await calendar.createEvent({
-      reference,
-      startsAt: selectedSlot.startsAt,
-      endsAt: selectedSlot.endsAt,
-      timezone: selectedSlot.timezone,
-      modality: modalityMap[input.modality],
-      attendeeName: input.fullName,
-      attendeeEmail: input.email,
-      practiceAreaName: practiceArea.name,
-    });
-    await db.appointment.update({
-      where: { id: appointment.id },
-      data: {
-        status: AppointmentStatus.CONFIRMED,
-        externalEventId: event.externalEventId,
-        calendarSyncStatus: CalendarSyncStatus.SYNCED,
-        calendarSyncError: null,
-      },
-    });
+    if (calendar.name === "mock") {
+      await db.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: AppointmentStatus.REQUESTED,
+          externalEventId: null,
+          calendarSyncStatus: CalendarSyncStatus.NOT_REQUIRED,
+          calendarSyncError: null,
+        },
+      });
+    } else {
+      const event = await calendar.createEvent({
+        reference,
+        startsAt: selectedSlot.startsAt,
+        endsAt: selectedSlot.endsAt,
+        timezone: selectedSlot.timezone,
+        modality: modalityMap[input.modality],
+        attendeeName: input.fullName,
+        attendeeEmail: input.email,
+        practiceAreaName: practiceArea.name,
+      });
+      status = AppointmentStatus.CONFIRMED;
+      await db.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status,
+          externalEventId: event.externalEventId,
+          calendarSyncStatus: CalendarSyncStatus.SYNCED,
+          calendarSyncError: null,
+        },
+      });
+    }
   } catch (error) {
     status = AppointmentStatus.PENDING_SYNC;
     await db.appointment.update({
@@ -146,7 +160,7 @@ export async function createAppointment(input: AppointmentInput) {
     });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = getSiteUrl();
   const manageUrl = new URL("/agenda", siteUrl);
   manageUrl.searchParams.set("gestionar", manageToken);
   const localDate = formatDateInTimeZone(
@@ -157,18 +171,80 @@ export async function createAppointment(input: AppointmentInput) {
     selectedSlot.startsAt,
     selectedSlot.timezone,
   );
-  const confirmationText = `Recibimos tu cita ${reference} para ${localDate} a las ${localTime}. Puedes gestionarla en ${manageUrl.toString()}`;
+  const lawyer = selectedSlot.lawyerId
+    ? await db.lawyerProfile.findUnique({
+        where: { id: selectedSlot.lawyerId },
+        select: { displayName: true },
+      })
+    : null;
+  const modalityLabel = {
+    PRESENCIAL: "Presencial",
+    VIDEOLLAMADA: "Videollamada",
+    TELEFONICA: "Llamada telefónica",
+  }[input.modality];
+  const commonDetails = [
+    { label: "Referencia", value: reference },
+    { label: "Fecha", value: localDate },
+    { label: "Hora", value: localTime },
+    { label: "Zona horaria", value: selectedSlot.timezone },
+    { label: "Modalidad", value: modalityLabel },
+    { label: "Área", value: practiceArea.name },
+    { label: "Profesional solicitado", value: lawyer?.displayName },
+  ];
+  const clientEmail = renderTransactionalEmail({
+    eyebrow: "Agenda",
+    title:
+      status === AppointmentStatus.CONFIRMED
+        ? "Su cita fue confirmada"
+        : "Solicitud de cita recibida",
+    greeting: `Hola ${input.fullName},`,
+    paragraphs: [
+      status === AppointmentStatus.CONFIRMED
+        ? "La cita quedó registrada y sincronizada con el calendario de la firma."
+        : "Registramos su solicitud. El equipo confirmará la disponibilidad por un canal de contacto autorizado.",
+    ],
+    details: commonDetails,
+    action: { label: "Gestionar solicitud", url: manageUrl.toString() },
+  });
+  const officeEmail = renderTransactionalEmail({
+    eyebrow: "Nueva solicitud",
+    title: `Nueva cita ${reference}`,
+    paragraphs: [
+      "Se registró una nueva solicitud de cita en el sistema.",
+      `Contacto: ${input.fullName} · ${input.email} · ${input.phone}`,
+      `Descripción breve: ${input.description}`,
+    ],
+    details: commonDetails,
+    action: {
+      label: "Abrir panel administrativo",
+      url: new URL("/admin/citas", siteUrl).toString(),
+    },
+  });
+  const officeRecipient =
+    process.env.CONTACT_RECIPIENT_EMAIL || "contacto@xs-abogados.com";
 
-  await sendTrackedEmail({
-    to: input.email,
-    subject: `Cita ${reference} · XS ABOGADOS`,
-    template: "appointment-confirmation",
-    text: confirmationText,
-    html: `<p>Hola ${escapeEmailHtml(input.fullName)},</p><p>${escapeEmailHtml(
-      confirmationText,
-    )}</p><p><a href="${escapeEmailHtml(manageUrl.toString())}">Gestionar cita</a></p>`,
-    metadata: { "X-XS-Reference": reference },
-  }).catch(() => undefined);
+  await Promise.allSettled([
+    sendTrackedEmail({
+      to: input.email,
+      subject:
+        status === AppointmentStatus.CONFIRMED
+          ? `Cita confirmada · ${reference}`
+          : `Solicitud de cita recibida · ${reference}`,
+      template: "appointment-client",
+      ...clientEmail,
+      tags: ["appointment", "client"],
+      metadata: { "X-XS-Reference": reference },
+    }),
+    sendTrackedEmail({
+      to: officeRecipient,
+      subject: `Nueva solicitud de cita · ${reference}`,
+      template: "appointment-office",
+      ...officeEmail,
+      replyTo: input.email,
+      tags: ["appointment", "office"],
+      metadata: { "X-XS-Reference": reference },
+    }),
+  ]);
 
   await db.auditLog.create({
     data: {

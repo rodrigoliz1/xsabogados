@@ -4,6 +4,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
 
+import { isDemoAuthAllowed } from "@/lib/environment";
+
 type LoginPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -20,7 +22,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const callbackUrl = safeCallback(params.callbackUrl);
   const session = await auth();
-  const showDevelopmentCredentials = process.env.NODE_ENV !== "production";
+  const showDemoNotice = isDemoAuthAllowed();
 
   if (session?.user?.active) redirect(callbackUrl);
 
@@ -92,16 +94,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Ingrese con las credenciales asignadas a su expediente.
           </p>
 
-          {showDevelopmentCredentials ? (
+          {showDemoNotice ? (
             <div className="mt-6 rounded-xl border border-[#d3d3d0]/25 bg-[#d3d3d0]/10 px-4 py-3 text-[10px] leading-5 text-[#f7f7f5]">
               <p className="font-bold uppercase tracking-[0.16em]">
-                Solo desarrollo · credenciales DEMO
+                Entorno de demostración
               </p>
-              <p className="mt-2 break-all">
-                Cliente: cliente@xs-abogados.local / XS-Cliente-2026!
-              </p>
-              <p className="break-all">
-                Admin: admin@xs-abogados.local / XS-Admin-2026!
+              <p className="mt-2">
+                Utilice únicamente las credenciales temporales entregadas por el
+                administrador. Este acceso se bloquea en producción.
               </p>
             </div>
           ) : null}

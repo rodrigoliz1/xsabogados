@@ -2,43 +2,52 @@
 
 ## Controles implementados
 
-- Validación Zod en cliente y servidor.
-- Sanitización de entradas y tratamiento de mensajes como texto plano.
-- Honeypot y rate limiting para formularios públicos.
-- Auth.js con cookies `httpOnly`, `secure` en producción y `sameSite` adecuado.
-- Contraseñas con bcrypt y credenciales DEMO limitadas a desarrollo.
-- Autorización server-side por rol, asignación y propiedad.
-- Selecciones explícitas para evitar exponer notas internas.
-- Auditoría de operaciones sensibles sin copiar contenido jurídico completo.
-- Cabeceras `nosniff`, frame protection, referrer y permissions policy.
-- Documentos fuera de `public`, claves opacas, MIME/tamaño permitidos y descarga autorizada.
+- Validación Zod en cliente y servidor, sanitización, longitudes máximas y campos estrictos.
+- Honeypot, verificación de origen, límites de payload y rate limiting con identificadores de red hasheados mediante `RATE_LIMIT_SALT`.
+- Auth.js con cookies `httpOnly`, `secure` en producción, sesión de ocho horas y validación de versión de sesión.
+- Contraseñas bcrypt, recuperación con token aleatorio almacenado como hash, expiración y uso único.
+- Autorización server-side por rol, propiedad y asignación. Las notas internas no forman parte de los DTO del cliente.
+- Restricción única de segmentos de cita para prevenir doble reserva concurrente.
+- CSP, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, protección de frames y HSTS únicamente en Vercel Production.
+- Preview y rutas privadas con `noindex`.
+- Documentos fuera de `public`, claves opacas, validación de magic bytes, tamaño, MIME y descarga autorizada o firmada.
+- Outbox de correo con estados, intentos, fecha del último intento, error sanitizado y `providerId`; nunca guarda claves del proveedor.
 
-## Amenazas prioritarias
+## Entornos
 
-- IDOR entre clientes: la propiedad forma parte del `where` de la consulta; no se filtra después.
-- Enumeración de cuentas: recuperación responde de forma genérica.
-- Doble reserva: restricción única y transacción sobre intervalos.
-- Spam: límite por ventana, honeypot y validación de longitud.
-- Path traversal: la aplicación genera claves de almacenamiento; nunca acepta rutas del usuario.
-- Exposición en analítica: los eventos no incluyen nombres, correos, teléfonos ni descripciones.
+`NODE_ENV=production` también se usa en Vercel Preview. Las decisiones de seguridad pública utilizan `VERCEL_ENV`:
 
-## Producción
+- `preview`: puede permitir calendario mock y cuentas demo únicamente con flags explícitos.
+- `production`: bloquea calendario mock, credenciales demo, seed y almacenamiento local.
+- El dominio `xs-abogados.com` bloquea autenticación demo aun si una variable se configurara incorrectamente.
 
-- Rotar `AUTH_SECRET` y credenciales si existe sospecha de exposición.
-- Deshabilitar DEMO y proveedores locales/mock.
-- Usar HTTPS, base cifrada, almacenamiento privado y URLs firmadas breves.
-- Configurar retención de logs, contactos, citas, documentos y auditoría de acuerdo con la política aprobada.
-- Añadir monitoreo de errores sin contenido jurídico sensible.
-- Documentar proceso de altas, bajas, suspensión y revisión periódica de accesos.
+`AUTH_SECRET`, credenciales de Neon, Brevo, Google, S3 y salts nunca deben utilizar `NEXT_PUBLIC_`.
 
-## Archivos
+## Correo
 
-Permitir únicamente formatos de negocio aprobados, validar magic bytes además del nombre, limitar tamaño y rechazar SVG/HTML. Un archivo visible para cliente requiere autorización explícita; una nota interna nunca debe convertirse automáticamente en actualización pública.
+Brevo se inicializa al usarse, con timeout y sin reintentos automáticos del POST. Los errores remotos se transforman en mensajes genéricos antes de persistir. No se registran API keys, tokens, contraseñas, cuerpos de respuesta del proveedor ni descripciones jurídicas en logs.
 
-## Aviso de privacidad
+Un fallo de correo no revierte una cita o formulario ya guardado. El reintento administrativo requiere sesión `ADMIN`, confirmación, reclamo atómico del registro fallido y auditoría.
 
-La plantilla incluida requiere revisión y aprobación jurídica interna antes de publicarse. Deben confirmarse responsable, domicilio, finalidades, transferencias, ejercicio de derechos ARCO, conservación y proveedores internacionales.
+## Repositorio y secretos
 
-## Reporte de incidentes
+- Mantenga el repositorio privado antes de incorporar datos reales.
+- `.env`, variantes locales, `.vercel`, `*.tsbuildinfo`, cargas y almacenamiento local están ignorados.
+- Si una clave aparece alguna vez en Git, eliminarla del archivo no basta: debe revocarse y rotarse.
+- No cargue bases, documentos, expedientes, mensajes o archivos de clientes al repositorio.
 
-Ante un incidente: contener acceso, preservar evidencia, rotar secretos, revisar auditoría, determinar alcance, restaurar desde respaldo y activar el procedimiento interno de notificación aplicable. No registrar el contenido sensible del incidente en canales no autorizados.
+## Almacenamiento
+
+Producción requiere S3 compatible antes de habilitar documentos. La aplicación no almacena documentos privados en `public`. Las URLs firmadas expiran y solo se generan después de validar acceso al asunto.
+
+## Rate limiting
+
+`RATE_LIMIT_PROVIDER=database` utiliza Neon y ofrece un límite compartido entre funciones. `memory` sirve para local o un Preview inicial, pero no constituye protección global en Vercel. Las IP se normalizan, se combinan con un salt y solo se persiste el hash por ventana.
+
+## Revisión jurídica
+
+El aviso de privacidad y términos son borradores pendientes de aprobación. Deben confirmarse responsable, domicilio, finalidades, transferencias, derechos ARCO, conservación y proveedores internacionales antes de indexarlos.
+
+## Incidentes
+
+Contenga el acceso, preserve evidencia, rote secretos, revise auditoría y logs, determine alcance, restaure desde respaldo y active el procedimiento interno aplicable. Nunca copie contenido jurídico sensible a herramientas de observabilidad no autorizadas.

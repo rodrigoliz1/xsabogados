@@ -1,13 +1,14 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import { getSiteUrl } from "@/lib/site-url";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 export function absoluteUrl(path = "/") {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://xs-abogados.com";
-  return new URL(path, base).toString();
+  return new URL(path, getSiteUrl()).toString();
 }
 
 export function formatDate(date: string | Date) {
