@@ -4,7 +4,7 @@ export type Lawyer = {
   slug: string;
   name: string;
   initials: string;
-  role: "Socio" | "Socia" | "Asociado Senior" | "Asociado";
+  role: "Socio Director" | "Socio" | "Socia" | "Asociado Senior" | "Asociado";
   primaryArea: string;
   areas: readonly string[];
   filters: readonly TeamFilterKey[];
@@ -34,8 +34,8 @@ export const lawyers: readonly Lawyer[] = [
     slug: "victor-silva",
     name: "Víctor Silva",
     initials: "VS",
-    role: "Socio",
-    primaryArea: "Corporativo & Negocios",
+    role: "Socio Director",
+    primaryArea: "",
     areas: [
       "Corporativo & Negocios",
       "Bancario & Financiero",
@@ -115,6 +115,35 @@ export const lawyers: readonly Lawyer[] = [
     imagePosition: "center 18%",
   },
   {
+    slug: "rodrigo-lizarraga",
+    name: "Rodrigo Lizárraga",
+    initials: "RL",
+    role: "Asociado Senior",
+    primaryArea: "Litigio & Solución de Conflictos",
+    areas: ["Litigio & Solución de Conflictos"],
+    filters: ["disputes"],
+    biography: [
+      "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
+      "Su práctica se desarrolla en el área de litigio y solución de conflictos, con especial interés en derecho administrativo, fiscal y constitucional.",
+      "Participa en el análisis de asuntos, investigación jurídica, elaboración de proyectos, organización de expedientes y seguimiento de procedimientos. Su formación se caracteriza por el compromiso con el aprendizaje continuo, la precisión en la redacción y el desarrollo de estrategias jurídicas sólidas.",
+      "Su enfoque lo posiciona como un profesional en desarrollo con alto potencial en el ámbito del litigio especializado.",
+    ],
+    education: [
+      "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
+    ],
+    focus: [
+      "Derecho administrativo, fiscal y constitucional",
+      "Investigación y análisis jurídico",
+      "Elaboración de proyectos",
+      "Organización de expedientes",
+      "Seguimiento de procedimientos",
+    ],
+    image: "/images/team/rodrigo-lizarraga.webp",
+    imageAlt:
+      "Retrato profesional de Rodrigo Lizárraga, asociado senior de XS ABOGADOS",
+    imagePosition: "center 18%",
+  },
+  {
     slug: "fernando-velasco",
     name: "Fernando Velasco",
     initials: "FV",
@@ -146,42 +175,14 @@ export const lawyers: readonly Lawyer[] = [
       "Retrato profesional de Fernando Velasco, asociado senior de XS ABOGADOS",
     imagePosition: "center 18%",
   },
-  {
-    slug: "rodrigo-lizarraga",
-    name: "Rodrigo Lizárraga",
-    initials: "RL",
-    role: "Asociado Senior",
-    primaryArea: "Litigio & Solución de Conflictos",
-    areas: ["Litigio & Solución de Conflictos"],
-    filters: ["disputes"],
-    biography: [
-      "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
-      "Su práctica se desarrolla en el área de litigio y solución de conflictos, con especial interés en derecho administrativo, fiscal y constitucional.",
-      "Participa en el análisis de asuntos, investigación jurídica, elaboración de proyectos, organización de expedientes y seguimiento de procedimientos. Su formación se caracteriza por el compromiso con el aprendizaje continuo, la precisión en la redacción y el desarrollo de estrategias jurídicas sólidas.",
-      "Su enfoque lo posiciona como un profesional en desarrollo con alto potencial en el ámbito del litigio especializado.",
-    ],
-    education: [
-      "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
-    ],
-    focus: [
-      "Derecho administrativo, fiscal y constitucional",
-      "Investigación y análisis jurídico",
-      "Elaboración de proyectos",
-      "Organización de expedientes",
-      "Seguimiento de procedimientos",
-    ],
-    image: "/images/team/rodrigo-lizarraga.webp",
-    imageAlt:
-      "Retrato profesional de Rodrigo Lizárraga, asociado senior de XS ABOGADOS",
-    imagePosition: "center 18%",
-  },
+
   {
     slug: "felipe-ibarra-ibarra",
     name: "Felipe Ibarra Ibarra",
     initials: "FII",
     role: "Asociado",
-    primaryArea: "Litigio Civil & Mercantil",
-    areas: ["Litigio Civil & Mercantil"],
+    primaryArea: "Litigio & Solución de Conflictos",
+    areas: ["Litigio & Solución de Conflictos"],
     filters: ["disputes"],
     biography: [
       "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
@@ -192,11 +193,35 @@ export const lawyers: readonly Lawyer[] = [
       "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
     ],
     focus: [
-      "Derecho civil y mercantil",
-      "Investigación jurídica",
-      "Análisis de contratos",
-      "Organización de expedientes",
-      "Seguimiento de controversias",
+      "Litigio civil y mercantil",
+      "Recuperación de cartera vencida",
+      "Negociación de adeudos",
+      "Ejecución de garantías",
+      "Controversias patrimoniales",
+    ],
+  },
+  {
+    slug: "rodrigo-rubio-gutierrez",
+    name: "Rodrigo Rubio Gutiérrez",
+    initials: "RRG",
+    role: "Asociado",
+    primaryArea: "Litigio & Solución de Conflictos",
+    areas: ["Litigio & Solución de Conflictos"],
+    filters: ["disputes"],
+    biography: [
+      "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
+      "Su formación se orienta al derecho civil y mercantil, participando en actividades de investigación jurídica, análisis de contratos, organización de expedientes, elaboración de proyectos y seguimiento de controversias.",
+      "Se distingue por su disposición para el aprendizaje, atención al detalle y compromiso con el desarrollo de soluciones jurídicas claras y bien estructuradas. Su preparación académica y experiencia práctica contribuyen a su crecimiento dentro del área de litigio civil y mercantil.",
+    ],
+    education: [
+      "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
+    ],
+    focus: [
+      "Litigio civil y mercantil",
+      "Recuperación de cartera vencida",
+      "Negociación de adeudos",
+      "Ejecución de garantías",
+      "Controversias patrimoniales",
     ],
   },
   {

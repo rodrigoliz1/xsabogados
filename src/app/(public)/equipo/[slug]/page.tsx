@@ -16,6 +16,7 @@ const appointmentAreaByLawyer: Record<string, string> = {
   "rodrigo-lizarraga": "litigio-solucion-conflictos",
   "felipe-ibarra-ibarra": "litigio-solucion-conflictos",
   "jose-luis-ahumada": "bancario-financiero",
+  "rodrigo-rubio-gutierrez": "litigio-solucion-conflictos",
 };
 
 type LawyerPageProps = {
@@ -49,11 +50,11 @@ export async function generateMetadata({
       type: "profile",
       images: lawyer.image
         ? [
-            {
-              url: `${SITE_URL}${lawyer.image}`,
-              alt: lawyer.imageAlt ?? lawyer.name,
-            },
-          ]
+          {
+            url: `${SITE_URL}${lawyer.image}`,
+            alt: lawyer.imageAlt ?? lawyer.name,
+          },
+        ]
         : undefined,
     },
   };

@@ -101,7 +101,7 @@ const lawyers = [
   {
     slug: "victor-silva",
     displayName: "Víctor Silva",
-    position: "Socio",
+    position: "Socio Director",
     education: "Instituto Tecnológico y de Estudios Superiores de Occidente.",
     image: "/images/team/victor-silva.webp",
     bio: "Abogado egresado del Instituto Tecnológico y de Estudios Superiores de Occidente, con una práctica profesional enfocada en el ámbito jurídico de los negocios. Su experiencia comprende derecho corporativo y financiero, fideicomisos, fusiones y adquisiciones, reestructuración financiera, insolvencia, negociaciones extrajudiciales, así como litigio mercantil, civil y constitucional. Su enfoque combina la estructuración preventiva de operaciones con el diseño de estrategias para la atención de controversias complejas.",
@@ -169,6 +169,16 @@ const lawyers = [
     image: null,
     bio: "Estudiante de la Licenciatura en Derecho en la Universidad de Guadalajara. Su formación se enfoca en las áreas de derecho corporativo, bancario y financiero. Participa en actividades de investigación jurídica, análisis documental, elaboración y revisión de instrumentos contractuales, organización de información corporativa y apoyo en la estructuración de operaciones. Se caracteriza por su capacidad de análisis, atención al detalle y compromiso con el aprendizaje constante. Su desarrollo profesional se orienta a comprender las necesidades jurídicas de empresas y operaciones financieras, contribuyendo a la construcción de soluciones ordenadas y eficientes.",
     areas: ["corporativo-negocios", "bancario-financiero"],
+  },
+  {
+    slug: "rodrigo-rubio-gutierrez",
+    displayName: "Rodrigo Rubio Gutiérrez",
+    position: "Asociado",
+    education:
+      "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara.",
+    image: null,
+    bio: "Estudiante de la Licenciatura en Derecho en la Universidad Panamericana, campus Guadalajara. Su formación se orienta al derecho civil y mercantil, participando en actividades de investigación jurídica, análisis de contratos, organización de expedientes, elaboración de proyectos y seguimiento de controversias. Se distingue por su disposición para el aprendizaje, atención al detalle y compromiso con el desarrollo de soluciones jurídicas claras y bien estructuradas. Su preparación académica y experiencia práctica contribuyen a su crecimiento dentro del área de litigio civil y mercantil.",
+    areas: ["litigio-solucion-conflictos"],
   },
 ] as const;
 

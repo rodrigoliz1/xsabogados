@@ -20,4 +20,5 @@ export const appointmentLawyers = [
   { value: "rodrigo-lizarraga", label: "Rodrigo Lizárraga" },
   { value: "felipe-ibarra-ibarra", label: "Felipe Ibarra Ibarra" },
   { value: "jose-luis-ahumada", label: "José Luis Ahumada" },
+  { value: "rodrigo-rubio-gutierrez", label: "Rodrigo Rubio Gutiérrez" },
 ] as const;
