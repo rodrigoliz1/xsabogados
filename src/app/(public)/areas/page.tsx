@@ -3,7 +3,9 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { PracticeAreaGrid } from "@/components/practice-areas/PracticeAreaGrid";
+import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
+import { editorialImages } from "@/data/editorial-images";
 import { practiceAreas } from "@/data/practice-areas";
 
 const SITE_URL = siteConfig.url;
@@ -85,6 +87,7 @@ export default function PracticeAreasPage() {
             corporativa, financiera, contenciosa y pública de una decisión.
           </p>
         </div>
+
       </section>
 
       <section className="mx-auto max-w-shell px-5 pb-28 sm:px-8 lg:px-12 lg:pb-40">

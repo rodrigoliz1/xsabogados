@@ -16,6 +16,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/agenda",
     "/contacto",
     "/portal",
+    "/aviso-de-privacidad",
+    "/terminos",
   ];
 
   return [

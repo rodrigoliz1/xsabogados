@@ -8,9 +8,11 @@ import { PracticeAreaCard } from "@/components/practice-areas/PracticeAreaCard";
 import { LawyerCard } from "@/components/team/LawyerCard";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { EditorialImage } from "@/components/ui/editorial-image";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { articles } from "@/data/articles";
+import { editorialImages } from "@/data/editorial-images";
 import { lawyers } from "@/data/lawyers";
 import { practiceAreas } from "@/data/practice-areas";
 
@@ -105,11 +107,18 @@ export default function HomePage() {
           XS
         </span>
         <Container className="relative">
-          <div className="grid gap-14 lg:grid-cols-[0.72fr_1.28fr] lg:gap-24">
-            <p className="eyebrow text-ink/50">La firma</p>
+          <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-20">
+            <Reveal>
+              <EditorialImage
+                className="aspect-[4/5] min-h-[32rem]"
+                image={editorialImages.puertaDeHierro2}
+                sizes="(max-width: 1024px) 100vw, 42vw"
+              />
+            </Reveal>
             <div>
+              <p className="eyebrow text-ink/50">La firma</p>
               <Reveal>
-                <h2 className="max-w-[15ch] text-balance font-serif text-5xl leading-[0.95] tracking-[-0.045em] sm:text-6xl lg:text-8xl">
+                <h2 className="mt-7 max-w-[15ch] text-balance font-serif text-5xl leading-[0.95] tracking-[-0.045em] sm:text-6xl lg:text-8xl">
                   Estrategia jurídica para decisiones complejas.
                 </h2>
               </Reveal>

@@ -138,9 +138,6 @@ export function Footer({
           <div>
             <p className="eyebrow text-paper-quiet">Horario</p>
             <p className="mt-4">{settings.officeHours}</p>
-            <p className="mt-2 text-xs">
-              {/* Datos editables mediante configuración. */}
-            </p>
           </div>
         </div>
         <div className="flex flex-col gap-4 pt-8 text-xs text-paper-quiet sm:flex-row sm:items-center sm:justify-between">

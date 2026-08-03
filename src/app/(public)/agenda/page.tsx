@@ -6,6 +6,8 @@ import { AppointmentWizard } from "@/components/appointments/appointment-wizard"
 import { AppointmentManager } from "@/components/appointments/appointment-manager";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Container } from "@/components/ui/container";
+import { EditorialImage } from "@/components/ui/editorial-image";
+import { editorialImages } from "@/data/editorial-images";
 
 export const metadata: Metadata = {
   title: "Agenda una consulta",
@@ -65,6 +67,12 @@ export default async function AgendaPage({
                 La firma confirmará disponibilidad y posibles conflictos.
               </p>
             </div>
+            <EditorialImage
+              className="mt-10 aspect-[16/10] min-h-64"
+              image={editorialImages.salaConsejo}
+              priority
+              sizes="(max-width: 1024px) 100vw, 36vw"
+            />
           </div>
           {manageToken ? (
             <AppointmentManager baseDate={mexicoToday} token={manageToken} />

@@ -37,14 +37,21 @@ export const metadata: Metadata = {
     url: siteConfig.url,
     siteName: siteConfig.name,
     title: "XS ABOGADOS | Estrategia jurídica",
-    description: "Soluciones jurídicas con visión estratégica..",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "XS ABOGADOS" }],
+    description: "Soluciones jurídicas con visión estratégica.",
+    images: [
+      {
+        url: "/og-v2.png",
+        width: 1200,
+        height: 630,
+        alt: "XS ABOGADOS · Soluciones jurídicas con visión estratégica",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "XS ABOGADOS | Estrategia jurídica",
-    description: "Soluciones jurídicas con visión estratégica..",
-    images: ["/og.png"],
+    description: "Soluciones jurídicas con visión estratégica.",
+    images: ["/og-v2.png"],
   },
   robots: isVercelPreview()
     ? { index: false, follow: false, nocache: true }

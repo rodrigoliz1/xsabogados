@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { siteConfig } from "@/config/site";
@@ -7,13 +7,11 @@ import { siteConfig } from "@/config/site";
 const SITE_URL = siteConfig.url;
 const CONTACT_EMAIL = siteConfig.contact.email;
 
-// Esta plantilla requiere revisión y aprobación jurídica interna antes de publicarse en producción.
 export const metadata: Metadata = {
   title: "Términos de uso | XS ABOGADOS",
   description:
-    "Términos generales para el uso del sitio, la agenda y el portal de XS ABOGADOS, pendientes de aprobación jurídica interna.",
+    "Términos generales para el uso del sitio, la agenda y el portal de XS ABOGADOS.",
   alternates: { canonical: `${SITE_URL}/terminos` },
-  robots: { index: false, follow: true },
 };
 
 const terms = [
@@ -100,14 +98,14 @@ const terms = [
     index: "11",
     title: "Modificaciones",
     paragraphs: [
-      "Estos términos podrán actualizarse para reflejar cambios jurídicos, operativos o tecnológicos. La versión publicada deberá indicar su fecha de entrada en vigor y, cuando sea necesario, comunicar cambios relevantes por medios adicionales.",
+      "Estos términos podrán actualizarse para reflejar cambios jurídicos, operativos o tecnológicos. Cada versión indicará su fecha de actualización y, cuando sea necesario, los cambios relevantes se comunicarán por medios adicionales.",
     ],
   },
   {
     index: "12",
     title: "Ley aplicable y contacto",
     paragraphs: [
-      "La ley aplicable, mecanismos de solución de controversias y jurisdicción deberán definirse y aprobarse internamente antes de la publicación en producción.",
+      "Estos términos se interpretarán conforme a la legislación aplicable en México. Cualquier controversia se atenderá mediante los mecanismos y ante las autoridades competentes que correspondan, sin perjuicio de los derechos irrenunciables de las personas usuarias.",
       `Las preguntas sobre estos términos pueden dirigirse a ${CONTACT_EMAIL}.`,
     ],
   },
@@ -125,23 +123,9 @@ export default function TermsPage() {
           <br />
           de uso.
         </h1>
-        <div className="mt-12 flex max-w-4xl gap-4 border border-black/20 bg-white p-5 sm:p-6">
-          <AlertTriangle
-            aria-hidden="true"
-            className="mt-0.5 size-5 shrink-0"
-            strokeWidth={1.5}
-          />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em]">
-              Borrador para revisión interna
-            </p>
-            <p className="mt-3 text-sm leading-7 text-black/65">
-              Esta plantilla requiere revisión y aprobación jurídica interna
-              antes de publicarse en producción. Permanecerá fuera de índices de
-              búsqueda mientras conserve este estado.
-            </p>
-          </div>
-        </div>
+        <p className="mt-12 text-xs font-semibold uppercase tracking-[0.16em] text-black/50">
+          Última actualización · 2 de agosto de 2026
+        </p>
       </section>
 
       <section className="border-t border-black/15">

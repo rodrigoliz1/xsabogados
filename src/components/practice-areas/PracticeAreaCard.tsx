@@ -1,6 +1,8 @@
 import { ArrowUpRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
+import { practiceAreaImages } from "@/data/editorial-images";
 import type { PracticeArea } from "@/data/practice-areas";
 
 type PracticeAreaCardProps = {
@@ -8,12 +10,33 @@ type PracticeAreaCardProps = {
 };
 
 export function PracticeAreaCard({ area }: PracticeAreaCardProps) {
+  const image =
+    Number(area.index) % 2 === 1
+      ? practiceAreaImages[
+          area.slug as keyof typeof practiceAreaImages
+        ]
+      : undefined;
+
   return (
-    <article className="group relative flex min-h-[28rem] flex-col overflow-hidden border border-white/15 bg-ink-2 p-6 transition duration-500 hover:-translate-y-1 hover:border-white/35 hover:bg-ink-3 motion-reduce:transform-none motion-reduce:transition-none sm:p-8">
-      <div
-        aria-hidden="true"
-        className="absolute -right-20 -top-28 size-72 rounded-full border border-white/10 transition duration-700 group-hover:scale-125 group-hover:border-white/20 motion-reduce:transform-none motion-reduce:transition-none"
-      />
+    <article className="group relative flex min-h-[31rem] flex-col overflow-hidden border border-white/15 bg-ink-2 p-6 transition duration-500 hover:-translate-y-1 hover:border-white/35 hover:bg-ink-3 motion-reduce:transform-none motion-reduce:transition-none sm:p-8">
+      {image ? (
+        <div className="absolute inset-x-0 top-0 h-[48%] overflow-hidden border-b border-white/10">
+          <Image
+            alt={image.alt}
+            className="object-cover grayscale transition duration-700 ease-out group-hover:scale-[1.035] group-hover:grayscale-0 motion-reduce:transform-none motion-reduce:transition-none"
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            src={image.src}
+            style={{ objectPosition: image.position ?? "center" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink-2 via-transparent to-black/15" />
+        </div>
+      ) : (
+        <div
+          aria-hidden="true"
+          className="absolute -right-20 -top-28 size-72 rounded-full border border-white/10 transition duration-700 group-hover:scale-125 group-hover:border-white/20 motion-reduce:transform-none motion-reduce:transition-none"
+        />
+      )}
       <div
         aria-hidden="true"
         className="absolute right-10 top-0 h-48 w-px -rotate-[28deg] bg-white/10"

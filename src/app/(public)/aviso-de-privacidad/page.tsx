@@ -1,27 +1,22 @@
 import type { Metadata } from "next";
-import { AlertTriangle, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import Link from "next/link";
 
 import { siteConfig } from "@/config/site";
 
 const SITE_URL = siteConfig.url;
 
-// Este documento requiere revisión y aprobación jurídica interna antes de publicarse en producción.
-const draftInstitutionalData = {
+const institutionalData = {
   responsibleName: siteConfig.name,
-  legalNameStatus:
-    "Razón social y datos registrales pendientes de confirmación",
   address: siteConfig.contact.address,
-  addressStatus: "Domicilio sujeto a confirmación interna",
   privacyEmail: siteConfig.contact.email,
 };
 
 export const metadata: Metadata = {
   title: "Aviso de privacidad | XS ABOGADOS",
   description:
-    "Plantilla de aviso de privacidad de XS ABOGADOS, pendiente de revisión y aprobación jurídica interna.",
+    "Aviso de privacidad de XS ABOGADOS para el sitio institucional, la agenda y el portal del cliente.",
   alternates: { canonical: `${SITE_URL}/aviso-de-privacidad` },
-  robots: { index: false, follow: true },
 };
 
 const sections = [
@@ -31,14 +26,12 @@ const sections = [
     content: (
       <>
         <p>
-          {draftInstitutionalData.responsibleName}, cuya razón social completa y
-          datos registrales deberán confirmarse antes de la publicación, será el
-          responsable del tratamiento de los datos personales que recabe.
+          {institutionalData.responsibleName} es responsable del tratamiento de
+          los datos personales que recabe mediante este sitio, la agenda, el
+          portal del cliente y los canales de contacto habilitados.
         </p>
         <p>
-          Domicilio de referencia para revisión:{" "}
-          {draftInstitutionalData.address}.{" "}
-          <strong>{draftInstitutionalData.addressStatus}.</strong>
+          El domicilio del responsable es {institutionalData.address}
         </p>
       </>
     ),
@@ -124,8 +117,8 @@ const sections = [
           Podrán realizarse transferencias cuando sean necesarias para cumplir
           obligaciones legales, atender requerimientos de autoridad, ejercer o
           defender derechos, o coordinar servicios profesionales autorizados.
-          Los supuestos, bases y destinatarios deberán validarse en la revisión
-          jurídica final de este aviso.
+          En cada caso se observarán las bases, finalidades y obligaciones
+          previstas por la normativa aplicable.
         </p>
       </>
     ),
@@ -141,14 +134,14 @@ const sections = [
           requisitos y excepciones previstos por la normativa aplicable.
         </p>
         <p>
-          La solicitud deberá enviarse a {draftInstitutionalData.privacyEmail} e
+          La solicitud deberá enviarse a {institutionalData.privacyEmail} e
           incluir nombre, medio para recibir respuesta, elementos que permitan
           acreditar identidad o representación, descripción del derecho que se
           desea ejercer y datos que ayuden a localizar la información.
         </p>
         <p>
-          El procedimiento, plazos y persona o área responsable de privacidad
-          deberán confirmarse antes de publicar la versión definitiva.
+          La solicitud será atendida conforme a los requisitos, plazos y
+          procedimientos previstos por la normativa aplicable.
         </p>
       </>
     ),
@@ -176,14 +169,14 @@ const sections = [
         <p>
           El sitio podrá utilizar tecnologías estrictamente necesarias para
           seguridad, autenticación, conservación de sesión y funcionamiento. Las
-          herramientas de analítica o medición opcionales solo deberán activarse
-          cuando estén configuradas y, en su caso, después de obtener el
-          consentimiento correspondiente.
+          herramientas de analítica o medición opcionales se utilizarán conforme
+          a la configuración del sitio y, cuando corresponda, después de obtener
+          el consentimiento aplicable.
         </p>
         <p>
-          La versión final deberá identificar categorías, duración, terceros y
-          mecanismos de configuración de las tecnologías efectivamente
-          utilizadas en producción.
+          Las personas usuarias podrán administrar las tecnologías opcionales
+          mediante los controles disponibles en su navegador o en el propio
+          sitio, cuando resulten aplicables.
         </p>
       </>
     ),
@@ -215,15 +208,15 @@ const sections = [
         <p>
           Las modificaciones relevantes se comunicarán mediante este sitio y,
           cuando corresponda, por los canales de contacto disponibles. La
-          versión publicada deberá indicar su fecha de entrada en vigor.
+          versión vigente permanecerá disponible con su fecha de actualización.
         </p>
         <p>
           Para dudas sobre privacidad, escribe a{" "}
           <a
-            href={`mailto:${draftInstitutionalData.privacyEmail}`}
+            href={`mailto:${institutionalData.privacyEmail}`}
             className="underline decoration-black/30 underline-offset-4 hover:decoration-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
           >
-            {draftInstitutionalData.privacyEmail}
+            {institutionalData.privacyEmail}
           </a>
           .
         </p>
@@ -244,32 +237,17 @@ export default function PrivacyNoticePage() {
           <br />
           privacidad.
         </h1>
-        <div className="mt-12 flex max-w-4xl gap-4 border border-black/20 bg-white p-5 sm:p-6">
-          <AlertTriangle
-            aria-hidden="true"
-            className="mt-0.5 size-5 shrink-0"
-            strokeWidth={1.5}
-          />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em]">
-              Borrador para revisión interna
-            </p>
-            <p className="mt-3 text-sm leading-7 text-black/65">
-              Este documento requiere revisión y aprobación jurídica interna
-              antes de publicarse en producción.{" "}
-              {draftInstitutionalData.legalNameStatus}.
-            </p>
-          </div>
-        </div>
+        <p className="mt-12 text-xs font-semibold uppercase tracking-[0.16em] text-black/50">
+          Última actualización · 2 de agosto de 2026
+        </p>
       </section>
 
       <section className="border-t border-black/15">
         <div className="mx-auto max-w-5xl px-5 py-20 sm:px-8 lg:py-28">
           <p className="mb-16 max-w-3xl text-xl leading-9 text-black/65">
-            Esta plantilla describe de manera general el tratamiento previsto
-            para el sitio institucional, la agenda y el portal del cliente. Su
-            contenido debe ajustarse a los procesos, proveedores y datos
-            definitivos de la firma.
+            Este aviso describe el tratamiento de datos personales relacionado
+            con el sitio institucional, la agenda, el portal del cliente y los
+            canales de contacto de la firma.
           </p>
 
           <div className="border-t border-black/15">
@@ -299,7 +277,7 @@ export default function PrivacyNoticePage() {
               Consultar términos de uso
             </Link>
             <a
-              href={`mailto:${draftInstitutionalData.privacyEmail}`}
+              href={`mailto:${institutionalData.privacyEmail}`}
               className="inline-flex min-h-12 items-center gap-3 bg-ink px-6 text-xs font-semibold uppercase tracking-[0.15em] text-paper transition hover:bg-ink-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
             >
               <Mail aria-hidden="true" className="size-4" strokeWidth={1.5} />

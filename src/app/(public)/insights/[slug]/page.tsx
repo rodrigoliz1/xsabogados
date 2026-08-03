@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ArticleGrid } from "@/components/articles/ArticleGrid";
+import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
 import {
   articleDisclaimer,
@@ -11,6 +12,7 @@ import {
   getArticleBySlug,
   getArticlesBySlugs,
 } from "@/data/articles";
+import { articleImages } from "@/data/editorial-images";
 
 const SITE_URL = siteConfig.url;
 
@@ -65,6 +67,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   if (!article) notFound();
 
   const relatedArticles = getArticlesBySlugs(article.relatedSlugs);
+  const editorialImage =
+    articleImages[article.slug as keyof typeof articleImages] ?? undefined;
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -157,11 +161,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               />
               <span>{article.readingTime}</span>
             </div>
-            {article.isSample ? (
-              <p className="mt-6 inline-flex border border-white/20 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-paper-muted">
-                Contenido de muestra · pendiente de revisión editorial final
-              </p>
-            ) : null}
             <h1 className="mt-8 max-w-6xl font-serif text-[clamp(4rem,9vw,9rem)] leading-[0.8] tracking-[-0.06em]">
               {article.title}
             </h1>
@@ -173,6 +172,17 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </p>
           </div>
         </header>
+
+        {editorialImage ? (
+          <section className="mx-auto max-w-shell px-5 pb-20 sm:px-8 lg:px-12 lg:pb-28">
+            <EditorialImage
+              className="aspect-[16/7] min-h-[24rem]"
+              image={editorialImage}
+              priority
+              sizes="(max-width: 1280px) 100vw, 1200px"
+            />
+          </section>
+        ) : null}
 
         <div className="border-y border-white/15 bg-paper text-ink">
           <div className="mx-auto grid max-w-shell gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.62fr_1.38fr] lg:gap-20 lg:px-12 lg:py-28">

@@ -2,9 +2,11 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Container } from "@/components/ui/container";
+import { editorialImages } from "@/data/editorial-images";
 
 export function HomeHero() {
   const reduceMotion = useReducedMotion();
@@ -12,9 +14,21 @@ export function HomeHero() {
   return (
     <section className="noise paper-grid relative flex min-h-[100svh] overflow-hidden bg-ink pb-10 pt-28 text-paper sm:pt-32 lg:pt-36">
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 opacity-35 sm:left-[35%] sm:opacity-50 lg:left-[48%] lg:opacity-65">
+          <Image
+            alt=""
+            className="object-cover grayscale"
+            fill
+            priority
+            sizes="(max-width: 640px) 100vw, 65vw"
+            src={editorialImages.puertaDeHierro.src}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/85 to-ink/15" />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-ink/45" />
+        </div>
         <motion.span
           animate={reduceMotion ? undefined : { opacity: 1, scale: 1 }}
-          className="absolute -right-[0.08em] top-[10vh] font-serif text-[min(77vw,65rem)] font-light leading-none tracking-[-0.12em] text-white/[0.026]"
+          className="absolute -right-[0.08em] top-[10vh] font-serif text-[min(77vw,65rem)] font-light leading-none tracking-[-0.12em] text-white/[0.04]"
           initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
           transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
         >

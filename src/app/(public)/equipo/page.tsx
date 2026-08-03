@@ -3,7 +3,9 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { TeamFilters } from "@/components/team/TeamFilters";
+import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
+import { editorialImages } from "@/data/editorial-images";
 import { lawyers } from "@/data/lawyers";
 
 const SITE_URL = siteConfig.url;
@@ -85,6 +87,12 @@ export default function TeamPage() {
             ejecución para atender cada asunto desde sus distintas dimensiones.
           </p>
         </div>
+        <EditorialImage
+          className="mt-16 aspect-[16/7] min-h-[24rem]"
+          image={editorialImages.puertaDeHierro}
+          priority
+          sizes="(max-width: 1280px) 100vw, 1200px"
+        />
       </section>
 
       <section className="mx-auto max-w-shell px-5 pb-28 sm:px-8 lg:px-12 lg:pb-40">

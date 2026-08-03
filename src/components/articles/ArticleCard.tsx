@@ -1,7 +1,9 @@
 import { ArrowUpRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import type { Article } from "@/data/articles";
+import { articleImages } from "@/data/editorial-images";
 
 type ArticleCardProps = {
   article: Article;
@@ -17,12 +19,29 @@ function formatDate(value: string) {
 }
 
 export function ArticleCard({ article }: ArticleCardProps) {
+  const image =
+    articleImages[article.slug as keyof typeof articleImages] ?? undefined;
+
   return (
     <article className="group relative flex min-h-[25rem] flex-col overflow-hidden border border-white/15 bg-ink-2 p-6 transition duration-500 hover:border-white/35 hover:bg-ink-3 sm:p-8">
-      <div
-        aria-hidden="true"
-        className="absolute -right-24 top-10 size-64 rounded-full border border-white/10 transition-transform duration-700 group-hover:scale-125 motion-reduce:transform-none motion-reduce:transition-none"
-      />
+      {image ? (
+        <div className="absolute inset-x-0 top-0 h-[46%] overflow-hidden border-b border-white/10">
+          <Image
+            alt={image.alt}
+            className="object-cover grayscale transition duration-700 group-hover:scale-[1.035] group-hover:grayscale-0 motion-reduce:transform-none motion-reduce:transition-none"
+            fill
+            sizes="(max-width: 1024px) 100vw, 33vw"
+            src={image.src}
+            style={{ objectPosition: image.position ?? "center" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink-2 via-transparent to-black/10" />
+        </div>
+      ) : (
+        <div
+          aria-hidden="true"
+          className="absolute -right-24 top-10 size-64 rounded-full border border-white/10 transition-transform duration-700 group-hover:scale-125 motion-reduce:transform-none motion-reduce:transition-none"
+        />
+      )}
       <div
         aria-hidden="true"
         className="absolute right-12 top-0 h-44 w-px rotate-[32deg] bg-white/10"
@@ -58,12 +77,6 @@ export function ArticleCard({ article }: ArticleCardProps) {
         </p>
         <div className="mt-7 flex items-center gap-3 text-[0.68rem] uppercase tracking-[0.14em] text-paper-quiet">
           <span>{article.readingTime}</span>
-          {article.isSample ? (
-            <>
-              <span aria-hidden="true" className="h-px w-6 bg-white/25" />
-              <span>Contenido de muestra · editable</span>
-            </>
-          ) : null}
         </div>
       </div>
 

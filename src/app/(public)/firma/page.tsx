@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
+import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
+import { editorialImages } from "@/data/editorial-images";
 
 const SITE_URL = siteConfig.url;
 
@@ -129,20 +131,26 @@ export default function FirmPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      <section className="mx-auto max-w-shell px-5 pb-24 pt-36 sm:px-8 sm:pt-44 lg:px-12 lg:pb-36 lg:pt-52">
-        <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">
-          Firma / Una nueva etapa
-        </p>
-        <div className="mt-12 grid gap-12 border-t border-white/15 pt-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
-          <p className="max-w-sm text-sm leading-7 text-paper-muted">
-            Estrategia jurídica para empresas, instituciones y personas que
-            enfrentan decisiones complejas.
+      <section className="relative flex min-h-[78svh] items-end overflow-hidden border-y border-white/15">
+        <EditorialImage
+          className="absolute inset-0"
+          image={editorialImages.puertaDeHierro}
+          imageClassName="scale-[1.01]"
+          priority
+          showCaption={false}
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/30 to-transparent" />
+        <div className="relative z-10 mx-auto w-full max-w-shell px-5 pb-16 pt-40 sm:px-8 sm:pb-20 lg:px-12 lg:pb-24">
+          <p className="text-xs font-semibold uppercase tracking-editorial text-paper-muted">
+            Firma / Guadalajara
           </p>
-          <h1 className="font-serif text-[clamp(4.2rem,10vw,9.5rem)] leading-[0.78] tracking-[-0.065em] text-paper">
-            Una nueva
-            <br />
-            etapa.
+          <h1 className="mt-7 font-serif text-[clamp(4.7rem,13vw,12rem)] leading-[0.76] tracking-[-0.07em] text-paper">
+            XS ABOGADOS
           </h1>
+          <p className="mt-8 text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-paper-quiet">
+            Puerta de Hierro · Zapopan
+          </p>
         </div>
       </section>
 
@@ -176,11 +184,16 @@ export default function FirmPage() {
       </section>
 
       <section className="mx-auto max-w-shell px-5 py-24 sm:px-8 lg:px-12 lg:py-36">
-        <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
+        <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:items-start lg:gap-20">
           <div>
             <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">
               Filosofía y misión
             </p>
+            <EditorialImage
+              className="mt-8 aspect-[4/5] min-h-[28rem]"
+              image={editorialImages.salaConsejo}
+              sizes="(max-width: 1024px) 100vw, 36vw"
+            />
           </div>
           <div>
             <h2 className="max-w-5xl font-serif text-[clamp(3rem,6.5vw,6.5rem)] leading-[0.88] tracking-[-0.05em]">
@@ -249,7 +262,7 @@ export default function FirmPage() {
       </section>
 
       <section className="mx-auto max-w-shell px-5 py-24 sm:px-8 lg:px-12 lg:py-36">
-        <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
+        <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:items-start lg:gap-20">
           <div>
             <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">
               Método
@@ -258,6 +271,11 @@ export default function FirmPage() {
               Una secuencia clara para mantener alineados el análisis, la
               ejecución y la comunicación.
             </p>
+            <EditorialImage
+              className="mt-8 aspect-[4/5] min-h-[28rem]"
+              image={editorialImages.guadalajaraNocturna}
+              sizes="(max-width: 1024px) 100vw, 36vw"
+            />
           </div>
           <ol className="border-t border-white/15">
             {method.map(([index, title, description]) => (

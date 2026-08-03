@@ -12,6 +12,9 @@ import { ContactForm } from "@/components/forms/contact-form";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { EditorialImage } from "@/components/ui/editorial-image";
+import { siteConfig } from "@/config/site";
+import { editorialImages } from "@/data/editorial-images";
 import {
   getPublicSiteSettings,
   getSettingsWhatsAppUrl,
@@ -44,6 +47,12 @@ export default async function ContactPage() {
               Agendar una consulta{" "}
               <ArrowUpRight aria-hidden="true" className="size-4" />
             </ButtonLink>
+            <EditorialImage
+              className="mt-10 aspect-[16/10] min-h-72"
+              image={editorialImages.puertaDeHierro}
+              priority
+              sizes="(max-width: 1024px) 100vw, 42vw"
+            />
             <dl className="mt-12 divide-y divide-white/10 border-y border-white/10">
               <ContactItem
                 icon={Phone}
@@ -68,6 +77,8 @@ export default async function ContactPage() {
                 icon={MapPin}
                 label="Oficina"
                 value={settings.address}
+                href={siteConfig.contact.mapsUrl}
+                external
               />
               <ContactItem
                 icon={Clock3}

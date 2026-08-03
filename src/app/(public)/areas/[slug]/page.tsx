@@ -5,7 +5,9 @@ import { notFound, permanentRedirect } from "next/navigation";
 
 import { PracticeFaqs } from "@/components/practice-areas/PracticeFaqs";
 import { LawyerGrid } from "@/components/team/LawyerGrid";
+import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
+import { practiceAreaImages } from "@/data/editorial-images";
 import { getLawyersBySlugs } from "@/data/lawyers";
 import {
   getPracticeAreaBySlug,
@@ -80,6 +82,8 @@ export default async function PracticeAreaPage({
   );
   const nextArea = practiceAreas[(currentIndex + 1) % practiceAreas.length];
   const appointmentUrl = `/agenda?area=${area.slug}`;
+  const editorialImage =
+    practiceAreaImages[area.slug as keyof typeof practiceAreaImages];
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -154,6 +158,17 @@ export default async function PracticeAreaPage({
           </h1>
         </div>
       </section>
+
+      {editorialImage ? (
+        <section className="mx-auto max-w-shell px-5 pb-24 sm:px-8 lg:px-12 lg:pb-36">
+          <EditorialImage
+            className="aspect-[16/7] min-h-[24rem]"
+            image={editorialImage}
+            priority
+            sizes="(max-width: 1280px) 100vw, 1200px"
+          />
+        </section>
+      ) : null}
 
       <section className="border-y border-white/15 bg-paper text-ink">
         <div className="mx-auto grid max-w-shell gap-12 px-5 py-24 sm:px-8 lg:grid-cols-[0.62fr_1.38fr] lg:gap-20 lg:px-12 lg:py-32">
