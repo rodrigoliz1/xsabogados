@@ -158,31 +158,32 @@ export default function FirmPage() {
         <div className="mx-auto grid max-w-shell gap-12 px-5 py-24 sm:px-8 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20 lg:px-12 lg:py-36">
           <div>
             <p className="text-xs font-semibold uppercase tracking-editorial text-black/55">
-              Renovación institucional
+              Nuestra firma
             </p>
           </div>
+
           <div className="max-w-4xl">
             <h2 className="font-serif text-[clamp(2.8rem,6vw,6rem)] leading-[0.95] tracking-[-0.045em]">
-              XS ABOGADOS representa una nueva etapa institucional construida
-              sobre experiencia jurídica, especialización y una visión
-              contemporánea del servicio legal.
+              Estrategia jurídica, especialización y atención personalizada para
+              asuntos que exigen precisión.
             </h2>
+
             <div className="mt-12 grid gap-7 text-base leading-8 text-black/65 sm:grid-cols-2">
               <p>
-                La firma estructura, protege y defiende los intereses de sus
-                clientes mediante soluciones precisas, atención personalizada y
-                estrategias multidisciplinarias.
+                En XS ABOGADOS asesoramos y representamos a empresas, instituciones y
+                particulares mediante soluciones jurídicas diseñadas a partir de un
+                análisis riguroso de cada asunto.
               </p>
+
               <p>
-                Nuestro punto de partida es comprender el contexto completo. El
-                derecho se integra a la operación, al patrimonio y a las
-                decisiones que cada asunto exige tomar.
+                Nuestro enfoque integra conocimiento técnico, visión estratégica y
+                cercanía con el cliente para prevenir riesgos, proteger intereses y
+                atender controversias con claridad y responsabilidad.
               </p>
             </div>
           </div>
         </div>
       </section>
-
       <section className="mx-auto max-w-shell px-5 py-24 sm:px-8 lg:px-12 lg:py-36">
         <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:items-start lg:gap-20">
           <div>
