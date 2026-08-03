@@ -46,7 +46,7 @@ const method = [
 
 export default function HomePage() {
   const partners = lawyers.filter(
-    (lawyer) => lawyer.role === "Socio" || lawyer.role === "Socia",
+    (lawyer) => lawyer.role === "Socio" || lawyer.role === "Socia" || lawyer.role === "Socio Director",
   );
 
   return (
