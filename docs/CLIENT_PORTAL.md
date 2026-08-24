@@ -30,6 +30,10 @@ El seed local crea registros ficticios identificados con `DEMO` dentro de las mi
 
 ## Operación
 
+Las cuentas de cliente se crean por invitación, nunca por registro público. El enlace de activación se almacena como hash, caduca y sólo puede utilizarse una vez. El cliente define su propia contraseña.
+
+El portal incorpora asuntos propios, avances visibles, documentos autorizados, chat y negociación de citas. Las notas internas, borradores, asuntos ajenos y auditoría se filtran en el servidor.
+
 - Dar de alta cuentas mediante un flujo interno verificado.
 - Suspender acceso inmediatamente al terminar la relación o detectar riesgo.
 - Revisar asignaciones y documentos visibles antes de cada publicación.

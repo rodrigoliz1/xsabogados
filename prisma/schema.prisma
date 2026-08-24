@@ -21,6 +21,11 @@ enum UserStatus {
   ARCHIVED
 }
 
+enum LawyerRank {
+  PARTNER
+  ASSOCIATE
+}
+
 enum MatterStatus {
   ACTIVE
   CONCLUDED
@@ -42,13 +47,24 @@ enum MatterStage {
 
 enum MatterAssignmentRole {
   LEAD
+  LEAD_LAWYER
   COLLABORATOR
   REVIEWER
+  SUPERVISING_PARTNER
+}
+
+enum MatterPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 enum Visibility {
   CLIENT
   INTERNAL
+  CLIENT_VISIBLE
+  INTERNAL_ONLY
 }
 
 enum AppointmentModality {
@@ -59,12 +75,37 @@ enum AppointmentModality {
 
 enum AppointmentStatus {
   REQUESTED
+  LAWYER_REVIEW
+  CLIENT_REVIEW
+  PROPOSED_BY_LAWYER
+  PROPOSED_BY_CLIENT
   CONFIRMED
+  DECLINED
   RESCHEDULE_REQUESTED
   CANCELLED
   COMPLETED
   NO_SHOW
   PENDING_SYNC
+}
+
+enum AppointmentProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SUPERSEDED
+  EXPIRED
+}
+
+enum AppointmentProposalSide {
+  CLIENT
+  FIRM
+}
+
+enum AppointmentHoldStatus {
+  ACTIVE
+  CONFIRMED
+  RELEASED
+  EXPIRED
 }
 
 enum CalendarSyncStatus {
@@ -94,7 +135,48 @@ enum ContactStatus {
 
 enum ArticleStatus {
   DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
   PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum ArticleReviewDecision {
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+enum ArticleBlockType {
+  HEADING_2
+  HEADING_3
+  PARAGRAPH
+  LIST
+  QUOTE
+  CALLOUT
+  IMAGE
+  DIVIDER
+  TABLE
+  LINK
+  NOTE
+  CONCLUSION
+}
+
+enum MediaType {
+  ARTICLE_HERO
+  ARTICLE_INLINE
+  LAWYER_PROFILE
+  DOCUMENT
+}
+
+enum MediaStatus {
+  PROCESSING
+  READY
+  REJECTED
   ARCHIVED
 }
 
@@ -107,8 +189,19 @@ enum DocumentScanStatus {
 enum NotificationType {
   MATTER_UPDATE
   MESSAGE
+  NEW_MESSAGE
   DOCUMENT
   APPOINTMENT
+  APPOINTMENT_REQUEST
+  APPOINTMENT_PROPOSAL
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  ARTICLE_SUBMITTED
+  ARTICLE_CHANGES_REQUESTED
+  ARTICLE_APPROVED
+  ARTICLE_PUBLISHED
+  ACCOUNT_INVITE
+  EMAIL_FAILED
   SYSTEM
 }
 
@@ -119,36 +212,81 @@ enum TokenType {
 
 enum EmailDeliveryStatus {
   PENDING
+  PROCESSING
   SENT
   FAILED
+  DEAD_LETTER
   MOCKED
 }
 
 model User {
-  id                String               @id @default(cuid())
-  name              String
-  email             String               @unique
-  passwordHash      String
-  role              UserRole             @default(CLIENT)
-  status            UserStatus           @default(INVITED)
-  sessionVersion    Int                  @default(1)
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  lastLoginAt       DateTime?
-  clientProfile     ClientProfile?
-  lawyerProfile     LawyerProfile?
-  matterUpdates     MatterUpdate[]       @relation("MatterUpdateAuthor")
-  stageTransitions  MatterStageHistory[] @relation("MatterStageActor")
-  uploadedDocuments Document[]           @relation("DocumentUploader")
-  messages          Message[]            @relation("MessageSender")
-  notifications     Notification[]
-  auditLogs         AuditLog[]           @relation("AuditActor")
-  authoredArticles  Article[]            @relation("ArticleAuthor")
-  actionTokens      ActionToken[]
-  settingsUpdates   SiteSettings[]       @relation("SettingsUpdater")
+  id                   String                @id @default(cuid())
+  name                 String
+  email                String                @unique
+  passwordHash         String?
+  role                 UserRole              @default(CLIENT)
+  status               UserStatus            @default(INVITED)
+  sessionVersion       Int                   @default(1)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  lastLoginAt          DateTime?
+  mfaEnabled           Boolean               @default(false)
+  mfaSecretEncrypted   String?
+  mfaPendingEncrypted  String?
+  mfaEnrolledAt        DateTime?
+  clientProfile        ClientProfile?
+  lawyerProfile        LawyerProfile?
+  matterUpdates        MatterUpdate[]        @relation("MatterUpdateAuthor")
+  stageTransitions     MatterStageHistory[]  @relation("MatterStageActor")
+  uploadedDocuments    Document[]            @relation("DocumentUploader")
+  messages             Message[]             @relation("MessageSender")
+  notifications        Notification[]
+  auditLogs            AuditLog[]            @relation("AuditActor")
+  authoredArticles     Article[]             @relation("ArticleAuthor")
+  actionTokens         ActionToken[]
+  settingsUpdates      SiteSettings[]        @relation("SettingsUpdater")
+  createdProposals     AppointmentProposal[] @relation("AppointmentProposalAuthor")
+  createdAppointments  Appointment[]         @relation("AppointmentCreator")
+  actedAppointments    Appointment[]         @relation("AppointmentLastActor")
+  acceptedAppointments Appointment[]         @relation("AppointmentAcceptedBy")
+  articleRevisions     ArticleRevision[]     @relation("ArticleRevisionAuthor")
+  articleReviews       ArticleReview[]       @relation("ArticleReviewer")
+  articleBlocks        ArticleBlock[]        @relation("ArticleBlockAuthor")
+  uploadedMedia        MediaAsset[]          @relation("MediaUploader")
+  approvedArticles     Article[]             @relation("ArticleApprover")
+  coauthoredArticles   ArticleCoauthor[]
+  createdInvites       ActionToken[]         @relation("InviteCreator")
+  mfaRecoveryCodes     MfaRecoveryCode[]
+  sessions             UserSession[]
 
   @@index([role, status])
   @@index([createdAt])
+}
+
+model MfaRecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, usedAt])
+}
+
+model UserSession {
+  id        String    @id
+  userId    String
+  createdAt DateTime  @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  ipHash    String?
+  userAgent String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, revokedAt, lastSeenAt])
+  @@index([expiresAt])
 }
 
 model ClientProfile {
@@ -181,34 +319,44 @@ model PracticeArea {
   lawyers          LawyerPracticeArea[]
   appointments     Appointment[]
   articles         Article[]
+  matters          Matter[]
 
   @@index([active, sortOrder])
 }
 
 model LawyerProfile {
-  id                String               @id @default(cuid())
-  userId            String?              @unique
-  slug              String               @unique
-  displayName       String
-  position          String
-  bio               String
-  education         String
-  image             String?
-  imageAlt          String?
-  sortOrder         Int                  @default(0)
-  active            Boolean              @default(true)
-  emailPublic       String?
-  linkedInUrl       String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  user              User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
-  areas             LawyerPracticeArea[]
-  assignments       MatterAssignment[]
-  appointments      Appointment[]
-  availabilityRules AvailabilityRule[]
-  blockedTimes      BlockedTime[]
+  id                    String                       @id @default(cuid())
+  userId                String?                      @unique
+  slug                  String                       @unique
+  displayName           String
+  position              String
+  rank                  LawyerRank                   @default(ASSOCIATE)
+  phone                 String?
+  bio                   String
+  education             String
+  image                 String?
+  imageAlt              String?
+  sortOrder             Int                          @default(0)
+  active                Boolean                      @default(true)
+  emailPublic           String?
+  linkedInUrl           String?
+  supervisorId          String?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  user                  User?                        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  areas                 LawyerPracticeArea[]
+  assignments           MatterAssignment[]
+  appointments          Appointment[]
+  availabilityRules     AvailabilityRule[]
+  blockedTimes          BlockedTime[]
+  availabilityOverrides LawyerAvailabilityOverride[]
+  supervisedLawyers     LawyerProfile[]              @relation("LawyerSupervision")
+  supervisor            LawyerProfile?               @relation("LawyerSupervision", fields: [supervisorId], references: [id], onDelete: Restrict)
+  appointmentProposals  AppointmentProposal[]
+  appointmentHolds      AppointmentHold[]
 
-  @@index([active, sortOrder])
+  @@index([active, rank, sortOrder])
+  @@index([supervisorId])
 }
 
 model LawyerPracticeArea {
@@ -231,6 +379,11 @@ model Matter {
   status              MatterStatus         @default(ACTIVE)
   stage               MatterStage          @default(INITIAL_REVIEW)
   clientId            String
+  practiceAreaId      String?
+  priority            MatterPriority       @default(NORMAL)
+  tags                String[]             @default([])
+  openedAt            DateTime             @default(now())
+  closedAt            DateTime?
   nextActionAt        DateTime?
   nextActionPublic    String?
   createdAt           DateTime             @default(now())
@@ -243,10 +396,12 @@ model Matter {
   appointments        Appointment[]
   documents           Document[]
   messages            Message[]
+  practiceArea        PracticeArea?        @relation(fields: [practiceAreaId], references: [id], onDelete: Restrict)
 
   @@index([clientId, status, updatedAt])
   @@index([stage, status])
   @@index([nextActionAt])
+  @@index([practiceAreaId, priority])
 }
 
 model MatterAssignment {
@@ -262,15 +417,23 @@ model MatterAssignment {
 }
 
 model MatterUpdate {
-  id          String     @id @default(cuid())
-  matterId    String
-  title       String
-  body        String
-  visibility  Visibility @default(CLIENT)
-  createdById String
-  createdAt   DateTime   @default(now())
-  matter      Matter     @relation(fields: [matterId], references: [id], onDelete: Restrict)
-  createdBy   User       @relation("MatterUpdateAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+  id            String       @id @default(cuid())
+  matterId      String
+  title         String
+  summary       String?
+  body          String
+  visibility    Visibility   @default(CLIENT)
+  createdById   String
+  createdAt     DateTime     @default(now())
+  effectiveAt   DateTime     @default(now())
+  relatedStage  MatterStage?
+  nextAction    String?
+  nextActionAt  DateTime?
+  publishedAt   DateTime?
+  emailOutboxId String?
+  matter        Matter       @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  createdBy     User         @relation("MatterUpdateAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+  emailOutbox   EmailOutbox? @relation("MatterUpdateEmail", fields: [emailOutboxId], references: [id], onDelete: SetNull)
 
   @@index([matterId, visibility, createdAt])
   @@index([createdById, createdAt])
@@ -305,15 +468,34 @@ model Appointment {
   modality           AppointmentModality
   startAt            DateTime
   endAt              DateTime
+  proposedStartAt    DateTime?
+  proposedEndAt      DateTime?
+  confirmedStartAt   DateTime?
+  confirmedEndAt     DateTime?
+  durationMinutes    Int                          @default(45)
   timezone           String                       @default("America/Mexico_City")
   status             AppointmentStatus            @default(REQUESTED)
   description        String
+  location           String?
+  meetingUrl         String?
+  visibleNotes       String?
   privacyAcceptedAt  DateTime
   manageTokenHash    String                       @unique
+  manageTokenExpiresAt DateTime?
   externalEventId    String?
   calendarSyncStatus CalendarSyncStatus           @default(PENDING)
   calendarSyncError  String?
+  calendarSyncAttempts Int                         @default(0)
+  calendarSyncLockedAt DateTime?
+  calendarSyncLockedBy String?
   internalNotes      String?
+  createdById        String?
+  lastActorId        String?
+  acceptedById       String?
+  confirmedAt        DateTime?
+  declinedAt         DateTime?
+  icsUid             String                       @unique @default(cuid())
+  icsSequence        Int                          @default(0)
   cancelledAt        DateTime?
   createdAt          DateTime                     @default(now())
   updatedAt          DateTime                     @updatedAt
@@ -323,12 +505,63 @@ model Appointment {
   lawyer             LawyerProfile?               @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
   reservationSlots   AppointmentReservationSlot[]
   changeRequests     AppointmentChangeRequest[]
+  proposals          AppointmentProposal[]
+  holds              AppointmentHold[]
+  createdBy          User?                        @relation("AppointmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  lastActor          User?                        @relation("AppointmentLastActor", fields: [lastActorId], references: [id], onDelete: Restrict)
+  acceptedBy         User?                        @relation("AppointmentAcceptedBy", fields: [acceptedById], references: [id], onDelete: Restrict)
 
   @@index([lawyerId, startAt, status])
   @@index([clientId, startAt])
   @@index([matterId, startAt])
   @@index([status, startAt])
+  @@index([calendarSyncStatus, calendarSyncLockedAt, updatedAt])
   @@index([email, createdAt])
+  @@index([manageTokenExpiresAt])
+}
+
+model AppointmentProposal {
+  id            String                    @id @default(cuid())
+  appointmentId String
+  proposedById  String?
+  proposerSide  AppointmentProposalSide
+  lawyerId      String?
+  startAt       DateTime
+  endAt         DateTime
+  modality      AppointmentModality
+  location      String?
+  meetingUrl    String?
+  message       String?
+  status        AppointmentProposalStatus @default(PENDING)
+  createdAt     DateTime                  @default(now())
+  respondedAt   DateTime?
+  appointment   Appointment               @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  proposedBy    User?                     @relation("AppointmentProposalAuthor", fields: [proposedById], references: [id], onDelete: Restrict)
+  lawyer        LawyerProfile?            @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+  hold          AppointmentHold?
+
+  @@index([appointmentId, status, createdAt])
+  @@index([proposedById, createdAt])
+}
+
+model AppointmentHold {
+  id            String                @id @default(cuid())
+  appointmentId String
+  proposalId    String?               @unique
+  lawyerId      String?
+  resourceKey   String
+  startsAt      DateTime
+  endsAt        DateTime
+  expiresAt     DateTime
+  status        AppointmentHoldStatus @default(ACTIVE)
+  createdAt     DateTime              @default(now())
+  appointment   Appointment           @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  proposal      AppointmentProposal?  @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  lawyer        LawyerProfile?        @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+
+  @@unique([resourceKey, startsAt])
+  @@index([expiresAt, status])
+  @@index([appointmentId, status])
 }
 
 model AppointmentReservationSlot {
@@ -358,18 +591,22 @@ model AppointmentChangeRequest {
 }
 
 model AvailabilityRule {
-  id              String         @id @default(cuid())
-  lawyerId        String?
-  weekday         Int
-  startMinutes    Int
-  endMinutes      Int
-  durationMinutes Int            @default(45)
-  bufferMinutes   Int            @default(15)
-  timezone        String         @default("America/Mexico_City")
-  active          Boolean        @default(true)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  lawyer          LawyerProfile? @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+  id                   String                @id @default(cuid())
+  lawyerId             String?
+  weekday              Int
+  startMinutes         Int
+  endMinutes           Int
+  durationMinutes      Int                   @default(45)
+  bufferMinutes        Int                   @default(15)
+  minimumNoticeMinutes Int                   @default(1440)
+  bookingHorizonDays   Int                   @default(60)
+  modalities           AppointmentModality[] @default([IN_PERSON, VIDEO_CALL, PHONE_CALL])
+  dailyLimit           Int?
+  timezone             String                @default("America/Mexico_City")
+  active               Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  lawyer               LawyerProfile?        @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
 
   @@index([lawyerId, weekday, active])
 }
@@ -380,10 +617,29 @@ model BlockedTime {
   startsAt  DateTime
   endsAt    DateTime
   reason    String?
+  allDay    Boolean        @default(false)
   createdAt DateTime       @default(now())
   lawyer    LawyerProfile? @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
 
   @@index([lawyerId, startsAt, endsAt])
+}
+
+model LawyerAvailabilityOverride {
+  id              String        @id @default(cuid())
+  lawyerId        String
+  date            DateTime
+  available       Boolean       @default(true)
+  startMinutes    Int?
+  endMinutes      Int?
+  durationMinutes Int?
+  bufferMinutes   Int?
+  reason          String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lawyer          LawyerProfile @relation(fields: [lawyerId], references: [id], onDelete: Restrict)
+
+  @@unique([lawyerId, date])
+  @@index([date, available])
 }
 
 model Document {
@@ -396,24 +652,35 @@ model Document {
   size         Int
   visibility   Visibility         @default(CLIENT)
   scanStatus   DocumentScanStatus @default(PENDING)
+  checksumSha256 String?
+  scanProvider String?
+  scanError    String?
+  scannedAt    DateTime?
+  deletedAt    DateTime?
   uploadedById String
   createdAt    DateTime           @default(now())
   matter       Matter             @relation(fields: [matterId], references: [id], onDelete: Restrict)
   uploadedBy   User               @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
 
   @@index([matterId, visibility, createdAt])
+  @@index([scanStatus, createdAt])
+  @@index([deletedAt])
 }
 
 model Message {
-  id         String     @id @default(cuid())
-  matterId   String
-  senderId   String
-  body       String
-  visibility Visibility @default(CLIENT)
-  createdAt  DateTime   @default(now())
-  readAt     DateTime?
-  matter     Matter     @relation(fields: [matterId], references: [id], onDelete: Restrict)
-  sender     User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  id                 String     @id @default(cuid())
+  matterId           String
+  senderId           String
+  body               String
+  visibility         Visibility @default(CLIENT)
+  createdAt          DateTime   @default(now())
+  readAt             DateTime?
+  editedAt           DateTime?
+  deletedAt          DateTime?
+  notificationSentAt DateTime?
+  idempotencyKey     String?    @unique
+  matter             Matter     @relation(fields: [matterId], references: [id], onDelete: Restrict)
+  sender             User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
 
   @@index([matterId, visibility, createdAt])
   @@index([senderId, createdAt])
@@ -426,8 +693,10 @@ model Notification {
   title       String
   body        String
   href        String?
+  metadata    Json?
   createdAt   DateTime         @default(now())
   readAt      DateTime?
+  dedupeKey   String?          @unique
   recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Restrict)
 
   @@index([recipientId, readAt, createdAt])
@@ -440,32 +709,142 @@ model AuditLog {
   entityType String
   entityId   String
   metadata   Json?
+  requestId  String?
+  ipHash     String?
+  userAgent  String?
   createdAt  DateTime @default(now())
   actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
+  @@index([requestId])
 }
 
 model Article {
-  id             String        @id @default(cuid())
-  slug           String        @unique
+  id             String            @id @default(cuid())
+  slug           String            @unique
   title          String
+  subtitle       String?
   excerpt        String
   body           String
+  introduction   String?
+  conclusion     String?
+  references     Json?
+  tags           String[]          @default([])
+  seoTitle       String?
+  seoDescription String?
+  ogTitle        String?
+  ogDescription  String?
+  legalNotice    String?
   authorId       String?
+  approvedById   String?
+  approvedAt     DateTime?
+  submittedAt    DateTime?
+  rejectedAt     DateTime?
+  scheduledAt    DateTime?
   practiceAreaId String?
-  status         ArticleStatus @default(DRAFT)
+  status         ArticleStatus     @default(DRAFT)
   publishedAt    DateTime?
-  readingMinutes Int           @default(5)
+  readingMinutes Int               @default(5)
   image          String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  author         User?         @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
-  practiceArea   PracticeArea? @relation(fields: [practiceAreaId], references: [id], onDelete: Restrict)
+  heroMediaId    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  author         User?             @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  approvedBy     User?             @relation("ArticleApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  heroMedia      MediaAsset?       @relation("ArticleHeroMedia", fields: [heroMediaId], references: [id], onDelete: SetNull)
+  practiceArea   PracticeArea?     @relation(fields: [practiceAreaId], references: [id], onDelete: Restrict)
+  revisions      ArticleRevision[]
+  reviews        ArticleReview[]
+  blocks         ArticleBlock[]
+  coauthors      ArticleCoauthor[]
 
   @@index([status, publishedAt])
   @@index([practiceAreaId, status, publishedAt])
+}
+
+model ArticleCoauthor {
+  articleId String
+  userId    String
+  sortOrder Int     @default(0)
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Restrict)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, userId])
+  @@index([userId, sortOrder])
+}
+
+model ArticleRevision {
+  id            String        @id @default(cuid())
+  articleId     String
+  version       Int
+  title         String
+  excerpt       String
+  content       Json
+  metadata      Json?
+  createdById   String
+  changeSummary String?
+  reviewStatus  ArticleStatus
+  createdAt     DateTime      @default(now())
+  article       Article       @relation(fields: [articleId], references: [id], onDelete: Restrict)
+  createdBy     User          @relation("ArticleRevisionAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([articleId, version])
+  @@index([createdById, createdAt])
+}
+
+model ArticleReview {
+  id         String                @id @default(cuid())
+  articleId  String
+  reviewerId String
+  decision   ArticleReviewDecision
+  comments   String?
+  createdAt  DateTime              @default(now())
+  article    Article               @relation(fields: [articleId], references: [id], onDelete: Restrict)
+  reviewer   User                  @relation("ArticleReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  @@index([articleId, createdAt])
+  @@index([reviewerId, decision, createdAt])
+}
+
+model ArticleBlock {
+  id          String           @id @default(cuid())
+  articleId   String
+  type        ArticleBlockType
+  sortOrder   Int
+  content     Json
+  createdById String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  article     Article          @relation(fields: [articleId], references: [id], onDelete: Restrict)
+  createdBy   User             @relation("ArticleBlockAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([articleId, sortOrder])
+  @@index([createdById, updatedAt])
+}
+
+model MediaAsset {
+  id           String      @id @default(cuid())
+  type         MediaType
+  status       MediaStatus @default(PROCESSING)
+  storageKey   String      @unique
+  deliveryUrl  String?
+  mimeType     String
+  width        Int
+  height       Int
+  size         Int
+  altText      String
+  caption      String?
+  checksum     String
+  variants     Json?
+  uploadedById String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  uploadedBy   User        @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  heroArticles Article[]   @relation("ArticleHeroMedia")
+
+  @@index([type, status, createdAt])
+  @@index([uploadedById, createdAt])
 }
 
 model ContactSubmission {
@@ -487,35 +866,46 @@ model ContactSubmission {
 }
 
 model ActionToken {
-  id        String    @id @default(cuid())
-  userId    String?
-  email     String
-  type      TokenType
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-  user      User?     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  id          String    @id @default(cuid())
+  userId      String?
+  email       String
+  type        TokenType
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  createdById String?
+  lastSentAt  DateTime?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdBy   User?     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([email, type, expiresAt])
   @@index([userId, type, expiresAt])
 }
 
 model EmailOutbox {
-  id         String              @id @default(cuid())
-  recipient  String
-  subject    String
-  template   String
-  payload    Json
-  status     EmailDeliveryStatus @default(PENDING)
-  attempts   Int                 @default(0)
-  providerId String?
-  lastError  String?
+  id            String              @id @default(cuid())
+  recipient     String
+  subject       String
+  template      String
+  payload       Json?
+  encryptedPayload String?
+  idempotencyKey String?             @unique
+  status        EmailDeliveryStatus @default(PENDING)
+  attempts      Int                 @default(0)
+  providerId    String?
+  lastError     String?
   lastAttemptAt DateTime?
-  createdAt  DateTime            @default(now())
-  sentAt     DateTime?
+  createdAt     DateTime            @default(now())
+  sentAt        DateTime?
+  failedAt      DateTime?
+  nextAttemptAt DateTime?
+  lockedAt      DateTime?
+  lockedBy      String?
+  updatedAt     DateTime            @updatedAt
+  matterUpdates MatterUpdate[]      @relation("MatterUpdateEmail")
 
-  @@index([status, createdAt])
+  @@index([status, nextAttemptAt, createdAt])
   @@index([recipient, createdAt])
 }
 

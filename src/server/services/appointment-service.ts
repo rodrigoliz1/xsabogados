@@ -5,12 +5,7 @@ import {
   Prisma,
 } from "@prisma/client";
 
-import {
-  formatDateInTimeZone,
-  formatTimeInTimeZone,
-  getCalendarProvider,
-  reservationSlotStarts,
-} from "@/lib/calendar";
+import { formatDateInTimeZone, formatTimeInTimeZone } from "@/lib/calendar";
 import { db } from "@/lib/db";
 import { renderTransactionalEmail, sendTrackedEmail } from "@/lib/email";
 import { getSiteUrl } from "@/lib/site-url";
@@ -43,7 +38,14 @@ function isUniqueConstraintError(error: unknown) {
   );
 }
 
-export async function createAppointment(input: AppointmentInput) {
+export async function createAppointment(
+  input: AppointmentInput,
+  context?: {
+    actorId: string;
+    clientProfileId: string;
+    matterId: string;
+  },
+) {
   if (developmentMemoryEnabled()) {
     const result = createDevelopmentAppointment(input);
     trackServerEvent("appointment_requested", {
@@ -53,12 +55,20 @@ export async function createAppointment(input: AppointmentInput) {
     });
     return { reference: result.reference, status: AppointmentStatus.REQUESTED };
   }
-  const [practiceArea, availability] = await Promise.all([
+  const [practiceArea, availability, clientProfile] = await Promise.all([
     db.practiceArea.findFirst({
       where: { slug: input.practiceArea, active: true },
       select: { id: true, name: true },
     }),
-    getAvailabilityDetails({ date: input.date, lawyerId: input.lawyerId }),
+    getAvailabilityDetails({
+      date: input.date,
+      lawyerId: input.lawyerId,
+      modality: modalityMap[input.modality],
+    }),
+    db.clientProfile.findFirst({
+      where: { user: { email: input.email, status: "ACTIVE" } },
+      select: { id: true },
+    }),
   ]);
   if (!practiceArea)
     throw new ResourceNotFoundError(
@@ -70,95 +80,89 @@ export async function createAppointment(input: AppointmentInput) {
   const reference = createPublicReference("CITA");
   const { token: manageToken, tokenHash: manageTokenHash } =
     createSecureToken();
-  const reservationStarts = reservationSlotStarts(
-    selectedSlot.startsAt,
-    selectedSlot.durationMinutes,
-    selectedSlot.bufferMinutes,
-  );
-
   let appointment: { id: string; reference: string };
   try {
-    appointment = await db.appointment.create({
-      data: {
-        reference,
-        fullName: input.fullName,
-        email: input.email,
-        phone: input.phone,
-        company: input.company,
-        practiceAreaId: practiceArea.id,
-        lawyerId: selectedSlot.lawyerId,
-        modality: modalityMap[input.modality],
-        startAt: selectedSlot.startsAt,
-        endAt: selectedSlot.endsAt,
-        timezone: selectedSlot.timezone,
-        description: input.description,
-        privacyAcceptedAt: new Date(),
-        manageTokenHash,
-        status: AppointmentStatus.REQUESTED,
-        calendarSyncStatus: CalendarSyncStatus.PENDING,
-        reservationSlots: {
-          create: reservationStarts.map((startsAt) => ({
-            resourceKey: selectedSlot.resourceKey,
-            startsAt,
-          })),
+    appointment = await db.$transaction(async (transaction) => {
+      await transaction.appointmentHold.deleteMany({
+        where: { status: "ACTIVE", expiresAt: { lte: new Date() } },
+      });
+      const created = await transaction.appointment.create({
+        data: {
+          reference,
+          fullName: input.fullName,
+          email: input.email,
+          phone: input.phone,
+          company: input.company,
+          clientId: context?.clientProfileId ?? clientProfile?.id,
+          matterId: context?.matterId,
+          practiceAreaId: practiceArea.id,
+          lawyerId: selectedSlot.lawyerId,
+          modality: modalityMap[input.modality],
+          startAt: selectedSlot.startsAt,
+          endAt: selectedSlot.endsAt,
+          proposedStartAt: selectedSlot.startsAt,
+          proposedEndAt: selectedSlot.endsAt,
+          durationMinutes: selectedSlot.durationMinutes,
+          timezone: selectedSlot.timezone,
+          description: input.description,
+          privacyAcceptedAt: new Date(),
+          manageTokenHash,
+          manageTokenExpiresAt: new Date(
+            Date.now() +
+              Math.max(
+                1,
+                Math.min(
+                  90,
+                  Number(process.env.APPOINTMENT_MANAGE_TOKEN_TTL_DAYS || 30),
+                ),
+              ) *
+                24 *
+                60 *
+                60 *
+                1000,
+          ),
+          status: AppointmentStatus.LAWYER_REVIEW,
+          createdById: context?.actorId,
+          lastActorId: context?.actorId,
+          calendarSyncStatus: CalendarSyncStatus.NOT_REQUIRED,
         },
-      },
-      select: { id: true, reference: true },
+        select: { id: true, reference: true },
+      });
+      const proposal = await transaction.appointmentProposal.create({
+        data: {
+          appointmentId: created.id,
+          proposerSide: "CLIENT",
+          lawyerId: selectedSlot.lawyerId,
+          startAt: selectedSlot.startsAt,
+          endAt: selectedSlot.endsAt,
+          modality: modalityMap[input.modality],
+          message: "Horario solicitado desde la agenda pública.",
+        },
+        select: { id: true },
+      });
+      const holdMinutes = Math.min(
+        120,
+        Math.max(5, Number(process.env.APPOINTMENT_HOLD_MINUTES || 20)),
+      );
+      await transaction.appointmentHold.create({
+        data: {
+          appointmentId: created.id,
+          proposalId: proposal.id,
+          lawyerId: selectedSlot.lawyerId,
+          resourceKey: selectedSlot.resourceKey,
+          startsAt: selectedSlot.startsAt,
+          endsAt: selectedSlot.occupiedUntil,
+          expiresAt: new Date(Date.now() + holdMinutes * 60 * 1000),
+        },
+      });
+      return created;
     });
   } catch (error) {
     if (isUniqueConstraintError(error)) throw new ReservationConflictError();
     throw error;
   }
 
-  let status: AppointmentStatus = AppointmentStatus.REQUESTED;
-  try {
-    const calendar = getCalendarProvider();
-    if (calendar.name === "mock") {
-      await db.appointment.update({
-        where: { id: appointment.id },
-        data: {
-          status: AppointmentStatus.REQUESTED,
-          externalEventId: null,
-          calendarSyncStatus: CalendarSyncStatus.NOT_REQUIRED,
-          calendarSyncError: null,
-        },
-      });
-    } else {
-      const event = await calendar.createEvent({
-        reference,
-        startsAt: selectedSlot.startsAt,
-        endsAt: selectedSlot.endsAt,
-        timezone: selectedSlot.timezone,
-        modality: modalityMap[input.modality],
-        attendeeName: input.fullName,
-        attendeeEmail: input.email,
-        practiceAreaName: practiceArea.name,
-      });
-      status = AppointmentStatus.CONFIRMED;
-      await db.appointment.update({
-        where: { id: appointment.id },
-        data: {
-          status,
-          externalEventId: event.externalEventId,
-          calendarSyncStatus: CalendarSyncStatus.SYNCED,
-          calendarSyncError: null,
-        },
-      });
-    }
-  } catch (error) {
-    status = AppointmentStatus.PENDING_SYNC;
-    await db.appointment.update({
-      where: { id: appointment.id },
-      data: {
-        status,
-        calendarSyncStatus: CalendarSyncStatus.FAILED,
-        calendarSyncError:
-          error instanceof Error
-            ? error.message.slice(0, 500)
-            : "Error de sincronización",
-      },
-    });
-  }
+  const status: AppointmentStatus = AppointmentStatus.LAWYER_REVIEW;
 
   const siteUrl = getSiteUrl();
   const manageUrl = new URL("/agenda", siteUrl);
@@ -193,15 +197,10 @@ export async function createAppointment(input: AppointmentInput) {
   ];
   const clientEmail = renderTransactionalEmail({
     eyebrow: "Agenda",
-    title:
-      status === AppointmentStatus.CONFIRMED
-        ? "Su cita fue confirmada"
-        : "Solicitud de cita recibida",
+    title: "Solicitud de cita recibida",
     greeting: `Hola ${input.fullName},`,
     paragraphs: [
-      status === AppointmentStatus.CONFIRMED
-        ? "La cita quedó registrada y sincronizada con el calendario de la firma."
-        : "Registramos su solicitud. El equipo confirmará la disponibilidad por un canal de contacto autorizado.",
+      "Registramos su solicitud. El horario aún no está confirmado; el profesional podrá aceptarlo o proponer una alternativa.",
     ],
     details: commonDetails,
     action: { label: "Gestionar solicitud", url: manageUrl.toString() },
@@ -226,10 +225,7 @@ export async function createAppointment(input: AppointmentInput) {
   await Promise.allSettled([
     sendTrackedEmail({
       to: input.email,
-      subject:
-        status === AppointmentStatus.CONFIRMED
-          ? `Cita confirmada · ${reference}`
-          : `Solicitud de cita recibida · ${reference}`,
+      subject: `Solicitud de cita recibida · ${reference}`,
       template: "appointment-client",
       ...clientEmail,
       tags: ["appointment", "client"],
@@ -259,5 +255,5 @@ export async function createAppointment(input: AppointmentInput) {
     assignedProfessional: Boolean(input.lawyerId),
   });
 
-  return { reference, status };
+  return { id: appointment.id, reference, status };
 }

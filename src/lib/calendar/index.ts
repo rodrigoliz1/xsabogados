@@ -7,6 +7,9 @@ import { isMockCalendarAllowed } from "@/lib/environment";
 export * from "./dates";
 export * from "./slots";
 export * from "./types";
+export * from "./ics";
+
+let googleProvider: GoogleCalendarProvider | undefined;
 
 export function getCalendarProvider() {
   const provider = process.env.CALENDAR_PROVIDER?.toLowerCase() || "mock";
@@ -27,12 +30,13 @@ export function getCalendarProvider() {
     if (!clientId || !clientSecret || !refreshToken || !calendarId) {
       throw new Error("La configuración de Google Calendar está incompleta.");
     }
-    return new GoogleCalendarProvider({
+    googleProvider ??= new GoogleCalendarProvider({
       clientId,
       clientSecret,
       refreshToken,
       calendarId,
     });
+    return googleProvider;
   }
 
   throw new Error(`Proveedor de calendario no soportado: ${provider}`);

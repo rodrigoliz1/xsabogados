@@ -19,15 +19,21 @@ async function loadFailedEmails() {
   if (!process.env.DATABASE_URL?.trim()) return null;
   try {
     return await db.emailOutbox.findMany({
-      where: { status: EmailDeliveryStatus.FAILED },
+      where: {
+        status: {
+          in: [EmailDeliveryStatus.FAILED, EmailDeliveryStatus.DEAD_LETTER],
+        },
+      },
       select: {
         id: true,
         recipient: true,
         subject: true,
         template: true,
         attempts: true,
+        status: true,
         lastError: true,
         lastAttemptAt: true,
+        nextAttemptAt: true,
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
@@ -56,12 +62,12 @@ export default async function FailedEmailsPage({
         description="Revisión y reintento controlado de mensajes que no fueron aceptados por el proveedor. El contenido del correo no se muestra en esta vista."
       />
 
-      {params.notice === "sent" ? (
+      {params.notice === "queued" ? (
         <p
           className="rounded-xl border border-emerald-700/15 bg-emerald-700/[0.07] px-4 py-3 text-sm text-emerald-900"
           role="status"
         >
-          El proveedor aceptó el reenvío y la operación quedó auditada.
+          El correo se reencoló de forma segura y la operación quedó auditada.
         </p>
       ) : null}
       {params.error ? (
@@ -111,7 +117,17 @@ export default async function FailedEmailsPage({
                       className="size-4 text-amber-700"
                       aria-hidden="true"
                     />
-                    <AdminStatus tone="gold">Fallido</AdminStatus>
+                    <AdminStatus
+                      tone={
+                        email.status === EmailDeliveryStatus.DEAD_LETTER
+                          ? "neutral"
+                          : "gold"
+                      }
+                    >
+                      {email.status === EmailDeliveryStatus.DEAD_LETTER
+                        ? "Intentos agotados"
+                        : "Reintento pendiente"}
+                    </AdminStatus>
                     <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-black/35">
                       {email.template}
                     </span>
@@ -132,6 +148,12 @@ export default async function FailedEmailsPage({
                   </p>
                   {email.lastError ? (
                     <p className="mt-1 text-black/35">{email.lastError}</p>
+                  ) : null}
+                  {email.nextAttemptAt ? (
+                    <p className="mt-1 text-black/35">
+                      Próximo intento:{" "}
+                      {dateFormatter.format(email.nextAttemptAt)}
+                    </p>
                   ) : null}
                 </div>
                 <RetryEmailButton

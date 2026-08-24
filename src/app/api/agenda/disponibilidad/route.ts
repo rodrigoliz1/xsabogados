@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     const parsed = availabilityQuerySchema.safeParse({
       date: url.searchParams.get("date"),
       lawyerId: url.searchParams.get("lawyerId") || undefined,
+      modality: url.searchParams.get("modality") || undefined,
     });
     if (!parsed.success) {
       return NextResponse.json(
@@ -26,7 +27,17 @@ export async function GET(request: Request) {
         { status: 400, headers: { "cache-control": "no-store" } },
       );
     }
-    const slots = await getAvailableSlotLabels(parsed.data);
+    const modalityMap = {
+      PRESENCIAL: "IN_PERSON",
+      VIDEOLLAMADA: "VIDEO_CALL",
+      TELEFONICA: "PHONE_CALL",
+    } as const;
+    const slots = await getAvailableSlotLabels({
+      ...parsed.data,
+      modality: parsed.data.modality
+        ? modalityMap[parsed.data.modality]
+        : undefined,
+    });
     return NextResponse.json(
       { slots },
       { headers: { "cache-control": "no-store" } },

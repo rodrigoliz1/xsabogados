@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 
+import { isPublicProduction } from "@/lib/environment";
 import type {
   AllowedPrivateDocumentType,
   PrivateStorageProvider,
@@ -11,10 +12,22 @@ type S3Config = {
   bucket: string;
   accessKeyId: string;
   secretAccessKey: string;
+  sessionToken?: string;
+  serverSideEncryption?: string;
+  kmsKeyId?: string;
+  requestTimeoutMs?: number;
 };
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+const MIN_REQUEST_TIMEOUT_MS = 1_000;
+const MAX_REQUEST_TIMEOUT_MS = 30_000;
 
 function sha256(value: Uint8Array | string) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function sha256Base64(value: Uint8Array | string) {
+  return createHash("sha256").update(value).digest("base64");
 }
 
 function hmac(key: Uint8Array | string, value: string) {
@@ -36,15 +49,119 @@ function awsTimestamp(date: Date) {
   return date.toISOString().replace(/[:-]|\.\d{3}/g, "");
 }
 
+function optionalValue(value: string | undefined) {
+  return value?.trim() || undefined;
+}
+
+function requestTimeout(value: number | string | undefined) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_REQUEST_TIMEOUT_MS;
+  return Math.max(
+    MIN_REQUEST_TIMEOUT_MS,
+    Math.min(MAX_REQUEST_TIMEOUT_MS, Math.floor(parsed)),
+  );
+}
+
+function normalizeHeaderValue(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function canonicalizeHeaders(headers: Record<string, string>) {
+  const normalized = new Map<string, string>();
+  for (const [name, value] of Object.entries(headers)) {
+    const normalizedName = name.trim().toLowerCase();
+    if (!normalizedName || normalized.has(normalizedName)) {
+      throw new Error("Los encabezados S3 no son válidos.");
+    }
+    normalized.set(normalizedName, normalizeHeaderValue(value));
+  }
+  const entries = [...normalized.entries()].sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+  return {
+    canonicalHeaders: `${entries
+      .map(([name, value]) => `${name}:${value}`)
+      .join("\n")}\n`,
+    signedHeaders: entries.map(([name]) => name).join(";"),
+    normalized: Object.fromEntries(entries),
+  };
+}
+
 export class S3PrivateStorageProvider implements PrivateStorageProvider {
   readonly name = "s3" as const;
+  private readonly endpoint: string;
+  private readonly sessionToken?: string;
+  private readonly serverSideEncryption: "AES256" | "aws:kms";
+  private readonly kmsKeyId?: string;
+  private readonly requestTimeoutMs: number;
 
-  constructor(private readonly config: S3Config) {}
+  constructor(private readonly config: S3Config) {
+    let endpoint: URL;
+    try {
+      endpoint = new URL(config.endpoint);
+    } catch {
+      throw new Error("El endpoint S3 no es una URL válida.");
+    }
+    if (!["http:", "https:"].includes(endpoint.protocol)) {
+      throw new Error("El endpoint S3 debe usar HTTP o HTTPS.");
+    }
+    if (isPublicProduction() && endpoint.protocol !== "https:") {
+      throw new Error("El endpoint S3 debe usar HTTPS en producción.");
+    }
+    if (
+      endpoint.username ||
+      endpoint.password ||
+      endpoint.search ||
+      endpoint.hash
+    ) {
+      throw new Error(
+        "El endpoint S3 no debe incluir credenciales, query ni hash.",
+      );
+    }
+    if (
+      !config.bucket.trim() ||
+      config.bucket.includes("/") ||
+      /[\u0000-\u001f\u007f]/.test(config.bucket)
+    ) {
+      throw new Error("El bucket S3 no es válido.");
+    }
+
+    this.endpoint = endpoint.toString().replace(/\/$/, "");
+    this.sessionToken =
+      optionalValue(config.sessionToken) ||
+      optionalValue(process.env.S3_SESSION_TOKEN) ||
+      optionalValue(process.env.AWS_SESSION_TOKEN);
+    const configuredEncryption =
+      optionalValue(config.serverSideEncryption) ||
+      optionalValue(process.env.S3_SERVER_SIDE_ENCRYPTION) ||
+      "AES256";
+    if (!(["AES256", "aws:kms"] as string[]).includes(configuredEncryption)) {
+      throw new Error("El cifrado del almacenamiento S3 no es válido.");
+    }
+    this.serverSideEncryption = configuredEncryption as "AES256" | "aws:kms";
+    this.kmsKeyId =
+      optionalValue(config.kmsKeyId) ||
+      optionalValue(process.env.S3_KMS_KEY_ID) ||
+      optionalValue(process.env.S3_SSE_KMS_KEY_ID);
+    if (this.serverSideEncryption === "aws:kms" && !this.kmsKeyId) {
+      throw new Error("SSE-KMS requiere una clave KMS configurada.");
+    }
+    this.requestTimeoutMs = requestTimeout(
+      config.requestTimeoutMs ??
+        optionalValue(process.env.S3_REQUEST_TIMEOUT_MS),
+    );
+  }
+
+  private assertValidKey(key: string) {
+    if (!/^(?:quarantine\/)?[a-f0-9]{2}\/[a-f0-9]{32}$/.test(key)) {
+      throw new Error("La clave del objeto S3 no es válida.");
+    }
+  }
 
   private objectUrl(key: string) {
-    const endpoint = this.config.endpoint.replace(/\/$/, "");
+    this.assertValidKey(key);
     return new URL(
-      `${endpoint}/${encodePath(this.config.bucket)}/${encodePath(key)}`,
+      `${this.endpoint}/${encodePath(this.config.bucket)}/${encodePath(key)}`,
     );
   }
 
@@ -66,8 +183,17 @@ export class S3PrivateStorageProvider implements PrivateStorageProvider {
     const amzDate = awsTimestamp(now);
     const dateStamp = amzDate.slice(0, 8);
     const payloadHash = sha256(body ?? new Uint8Array());
-    const canonicalHeaders = `host:${url.host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
-    const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+    const requestHeaders: Record<string, string> = {
+      ...extraHeaders,
+      host: url.host,
+      "x-amz-content-sha256": payloadHash,
+      "x-amz-date": amzDate,
+    };
+    if (this.sessionToken) {
+      requestHeaders["x-amz-security-token"] = this.sessionToken;
+    }
+    const { canonicalHeaders, signedHeaders, normalized } =
+      canonicalizeHeaders(requestHeaders);
     const canonicalRequest = [
       method,
       url.pathname,
@@ -88,28 +214,58 @@ export class S3PrivateStorageProvider implements PrivateStorageProvider {
       .digest("hex");
     const authorization = `AWS4-HMAC-SHA256 Credential=${this.config.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-    return fetch(url, {
-      method,
-      headers: {
-        authorization,
-        "x-amz-content-sha256": payloadHash,
-        "x-amz-date": amzDate,
-        ...extraHeaders,
-      },
-      body: body ? Buffer.from(body) : undefined,
-      cache: "no-store",
-    });
+    const sentHeaders = { ...normalized };
+    delete sentHeaders.host;
+    const signal = AbortSignal.timeout(this.requestTimeoutMs);
+    try {
+      return await fetch(url, {
+        method,
+        headers: { ...sentHeaders, authorization },
+        body: body === undefined ? undefined : Buffer.from(body),
+        cache: "no-store",
+        signal,
+      });
+    } catch (error) {
+      if (signal.aborted) {
+        throw new Error("La operación S3 excedió el tiempo máximo permitido.", {
+          cause: error,
+        });
+      }
+      throw new Error("No fue posible completar la operación S3.", {
+        cause: error,
+      });
+    }
   }
 
   async put(input: {
     bytes: Uint8Array;
     mimeType: AllowedPrivateDocumentType;
+    quarantine?: boolean;
+    checksumSha256?: string;
   }) {
+    const checksumHex = sha256(input.bytes);
+    if (
+      input.checksumSha256 &&
+      input.checksumSha256.toLowerCase() !== checksumHex
+    ) {
+      throw new Error("El checksum del objeto privado no coincide.");
+    }
     const id = randomBytes(16).toString("hex");
-    const key = `${id.slice(0, 2)}/${id}`;
+    const key = `${input.quarantine ? "quarantine/" : ""}${id.slice(0, 2)}/${id}`;
+    const checksum = sha256Base64(input.bytes);
+    const encryptionHeaders: Record<string, string> = {
+      "x-amz-server-side-encryption": this.serverSideEncryption,
+    };
+    if (this.serverSideEncryption === "aws:kms") {
+      encryptionHeaders["x-amz-server-side-encryption-aws-kms-key-id"] =
+        this.kmsKeyId!;
+    }
     const response = await this.signedRequest("PUT", key, input.bytes, {
+      "cache-control": "private, no-store",
       "content-type": input.mimeType,
       "content-disposition": "attachment",
+      "x-amz-checksum-sha256": checksum,
+      ...encryptionHeaders,
     });
     if (!response.ok)
       throw new Error(`S3 rechazó la carga privada (${response.status}).`);
@@ -137,6 +293,9 @@ export class S3PrivateStorageProvider implements PrivateStorageProvider {
     filename: string,
     expiresInSeconds = 300,
   ) {
+    if (key.startsWith("quarantine/")) {
+      throw new Error("Los objetos en cuarentena no admiten descarga firmada.");
+    }
     const url = this.objectUrl(key);
     const now = new Date();
     const amzDate = awsTimestamp(now);
@@ -153,7 +312,11 @@ export class S3PrivateStorageProvider implements PrivateStorageProvider {
         "response-content-disposition",
         `attachment; filename="${filename.replace(/["\r\n]/g, "_")}"`,
       ],
+      ["response-cache-control", "private, no-store"],
     ];
+    if (this.sessionToken) {
+      queryEntries.push(["X-Amz-Security-Token", this.sessionToken]);
+    }
     const canonicalQuery = queryEntries
       .map(([name, value]) => [encodeAws(name), encodeAws(value)] as const)
       .sort(([left], [right]) => left.localeCompare(right))

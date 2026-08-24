@@ -28,7 +28,11 @@ type ArticlesResult =
 
 const statusPresentation = {
   DRAFT: { label: "Borrador", tone: "neutral" },
+  SUBMITTED: { label: "En revisión", tone: "blue" },
+  CHANGES_REQUESTED: { label: "Correcciones", tone: "gold" },
+  APPROVED: { label: "Aprobado", tone: "green" },
   PUBLISHED: { label: "Publicado", tone: "green" },
+  REJECTED: { label: "Rechazado", tone: "neutral" },
   ARCHIVED: { label: "Archivado", tone: "gold" },
 } as const;
 
@@ -69,12 +73,26 @@ export default async function ArticlesAdminPage() {
         title="Artículos"
         description="Inventario editorial y estado de publicación obtenidos del repositorio."
         action={
-          <Link
-            href="/insights"
-            className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-3 text-[9px] font-bold uppercase tracking-[0.14em] text-black/60 hover:border-black/20"
-          >
-            Ver sección pública <ArrowUpRight size={13} aria-hidden="true" />
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/articulos/pendientes"
+              className="inline-flex items-center rounded-xl bg-black px-4 py-3 text-[9px] font-bold uppercase tracking-[0.14em] text-white"
+            >
+              Pendientes
+            </Link>
+            <Link
+              href="/admin/articulos/publicados"
+              className="inline-flex items-center rounded-xl border border-black/10 bg-white px-4 py-3 text-[9px] font-bold uppercase tracking-[0.14em] text-black/60"
+            >
+              Publicados
+            </Link>
+            <Link
+              href="/insights"
+              className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-3 text-[9px] font-bold uppercase tracking-[0.14em] text-black/60 hover:border-black/20"
+            >
+              Ver sección pública <ArrowUpRight size={13} aria-hidden="true" />
+            </Link>
+          </div>
         }
       />
 
@@ -114,8 +132,9 @@ export default async function ArticlesAdminPage() {
             const presentation = statusPresentation[article.status];
 
             return (
-              <article
+              <Link
                 key={article.id}
+                href={`/admin/articulos/${article.id}`}
                 className="flex min-h-72 flex-col rounded-2xl border border-black/10 bg-white p-6"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -142,7 +161,7 @@ export default async function ArticlesAdminPage() {
                     <p>Publicado {formatDate(article.publishedAt)}</p>
                   ) : null}
                 </div>
-              </article>
+              </Link>
             );
           })}
         </section>
@@ -152,7 +171,8 @@ export default async function ArticlesAdminPage() {
         <div>
           <p className="font-serif text-2xl">Vista editorial de lectura</p>
           <p className="mt-1 text-xs text-white/40">
-            Esta pantalla no ofrece acciones de edición o publicación.
+            Abra cualquier artículo para editarlo, archivarlo, restaurarlo o
+            administrar su publicación.
           </p>
         </div>
         <Link

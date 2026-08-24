@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { TeamFilters } from "@/components/team/TeamFilters";
+import { JsonLd } from "@/components/seo/json-ld";
 import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
 import { editorialImages } from "@/data/editorial-images";
@@ -69,10 +70,7 @@ export default function TeamPage() {
 
   return (
     <div className="bg-ink text-paper">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <section className="mx-auto max-w-shell px-5 pb-24 pt-36 sm:px-8 sm:pt-44 lg:px-12 lg:pb-32 lg:pt-52">
         <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">

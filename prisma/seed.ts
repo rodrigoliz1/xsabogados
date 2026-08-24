@@ -241,9 +241,15 @@ async function main() {
     password: DEMO_PASSWORDS.client,
     role: UserRole.CLIENT,
   });
-  const lawyerUser = await upsertDemoUser({
+  const partnerUser = await upsertDemoUser({
     name: "Alejandro Guerrero",
     email: "abogado@xs-abogados.local",
+    password: DEMO_PASSWORDS.lawyer,
+    role: UserRole.LAWYER,
+  });
+  const associateUser = await upsertDemoUser({
+    name: "Rodrigo Lizárraga",
+    email: "asociado@xs-abogados.local",
     password: DEMO_PASSWORDS.lawyer,
     role: UserRole.LAWYER,
   });
@@ -282,6 +288,15 @@ async function main() {
 
   const lawyerBySlug = new Map<string, { id: string }>();
   for (const [index, lawyer] of lawyers.entries()) {
+    const rank = lawyer.position.toLowerCase().startsWith("soci")
+      ? ("PARTNER" as const)
+      : ("ASSOCIATE" as const);
+    const userId =
+      lawyer.slug === "alejandro-guerrero"
+        ? partnerUser.id
+        : lawyer.slug === "rodrigo-lizarraga"
+          ? associateUser.id
+          : null;
     const saved = await prisma.lawyerProfile.upsert({
       where: { slug: lawyer.slug },
       update: {
@@ -295,7 +310,8 @@ async function main() {
           : null,
         sortOrder: index,
         active: true,
-        userId: lawyer.slug === "alejandro-guerrero" ? lawyerUser.id : null,
+        rank,
+        userId,
       },
       create: {
         slug: lawyer.slug,
@@ -308,7 +324,8 @@ async function main() {
           ? `Retrato profesional de ${lawyer.displayName}`
           : null,
         sortOrder: index,
-        userId: lawyer.slug === "alejandro-guerrero" ? lawyerUser.id : null,
+        rank,
+        userId,
       },
       select: { id: true },
     });

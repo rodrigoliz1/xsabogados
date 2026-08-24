@@ -65,6 +65,7 @@ export type AppointmentInput = z.infer<typeof appointmentSchema>;
 
 export const availabilityQuerySchema = z.object({
   date: z.string().refine(isCalendarDate, "La fecha no es válida."),
+  modality: z.enum(["PRESENCIAL", "VIDEOLLAMADA", "TELEFONICA"]).optional(),
   lawyerId: z
     .string()
     .trim()

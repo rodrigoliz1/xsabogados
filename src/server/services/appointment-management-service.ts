@@ -1,15 +1,16 @@
-import { AppointmentStatus, CalendarSyncStatus } from "@prisma/client";
+import { AppointmentStatus, Prisma } from "@prisma/client";
 
 import {
   formatDateInTimeZone,
   formatTimeInTimeZone,
-  getCalendarProvider,
-  zonedDateTimeToUtc,
+  reservationResourceKey,
 } from "@/lib/calendar";
 import { db } from "@/lib/db";
 import { renderTransactionalEmail, sendTrackedEmail } from "@/lib/email";
-import { getSiteUrl } from "@/lib/site-url";
 import { hashToken } from "@/lib/security/tokens";
+import { getSiteUrl } from "@/lib/site-url";
+import { getAvailabilityDetails } from "@/server/services/availability-service";
+import { synchronizeAppointmentCalendar } from "@/server/services/calendar-sync-service";
 import type {
   appointmentCancellationSchema,
   appointmentRescheduleRequestSchema,
@@ -164,7 +165,10 @@ async function notifyAppointmentReschedule(
 
 export async function cancelAppointment(input: CancellationInput) {
   const appointment = await db.appointment.findUnique({
-    where: { manageTokenHash: hashToken(input.token) },
+    where: {
+      manageTokenHash: hashToken(input.token),
+      manageTokenExpiresAt: { gt: new Date() },
+    },
     select: {
       id: true,
       reference: true,
@@ -175,6 +179,8 @@ export async function cancelAppointment(input: CancellationInput) {
       startAt: true,
       timezone: true,
       modality: true,
+      lawyerId: true,
+      durationMinutes: true,
       practiceArea: { select: { name: true } },
       lawyer: { select: { displayName: true } },
     },
@@ -196,11 +202,22 @@ export async function cancelAppointment(input: CancellationInput) {
     db.appointmentReservationSlot.deleteMany({
       where: { appointmentId: appointment.id },
     }),
+    db.appointmentHold.deleteMany({
+      where: { appointmentId: appointment.id },
+    }),
+    db.appointmentProposal.updateMany({
+      where: { appointmentId: appointment.id, status: "PENDING" },
+      data: { status: "REJECTED", respondedAt: new Date() },
+    }),
     db.appointment.update({
       where: { id: appointment.id },
       data: {
         status: AppointmentStatus.CANCELLED,
         cancelledAt: new Date(),
+        calendarSyncStatus: "PENDING",
+        calendarSyncError: null,
+        calendarSyncLockedAt: null,
+        calendarSyncLockedBy: null,
         internalNotes: input.reason
           ? `Cancelación solicitada: ${input.reason}`
           : undefined,
@@ -217,29 +234,17 @@ export async function cancelAppointment(input: CancellationInput) {
     }),
   ]);
 
-  if (appointment.externalEventId) {
-    try {
-      await getCalendarProvider().cancelEvent(appointment.externalEventId);
-    } catch (error) {
-      await db.appointment.update({
-        where: { id: appointment.id },
-        data: {
-          calendarSyncStatus: CalendarSyncStatus.FAILED,
-          calendarSyncError:
-            error instanceof Error
-              ? error.message.slice(0, 500)
-              : "Error al cancelar evento",
-        },
-      });
-    }
-  }
+  await synchronizeAppointmentCalendar(appointment.id).catch(() => undefined);
   await notifyAppointmentCancellation(appointment);
   return { reference: appointment.reference };
 }
 
 export async function requestAppointmentReschedule(input: RescheduleInput) {
   const appointment = await db.appointment.findUnique({
-    where: { manageTokenHash: hashToken(input.token) },
+    where: {
+      manageTokenHash: hashToken(input.token),
+      manageTokenExpiresAt: { gt: new Date() },
+    },
     select: {
       id: true,
       reference: true,
@@ -249,6 +254,8 @@ export async function requestAppointmentReschedule(input: RescheduleInput) {
       email: true,
       startAt: true,
       modality: true,
+      lawyerId: true,
+      durationMinutes: true,
       practiceArea: { select: { name: true } },
       lawyer: { select: { displayName: true } },
     },
@@ -265,11 +272,19 @@ export async function requestAppointmentReschedule(input: RescheduleInput) {
       "APPOINTMENT_NOT_CHANGEABLE",
     );
   }
-  const requestedStartAt = zonedDateTimeToUtc(
-    input.date,
-    input.time,
-    appointment.timezone,
-  );
+  const availableSlots = await getAvailabilityDetails({
+    date: input.date,
+    lawyerId: appointment.lawyerId ?? undefined,
+    modality: appointment.modality,
+  });
+  const selectedSlot = availableSlots.find((slot) => slot.label === input.time);
+  if (!selectedSlot)
+    throw new ServiceError(
+      "El horario solicitado ya no está disponible.",
+      409,
+      "SLOT_CONFLICT",
+    );
+  const requestedStartAt = selectedSlot.startsAt;
   if (requestedStartAt <= new Date()) {
     throw new ServiceError(
       "La nueva fecha debe ser futura.",
@@ -278,20 +293,77 @@ export async function requestAppointmentReschedule(input: RescheduleInput) {
     );
   }
 
-  await db.$transaction([
-    db.appointment.update({
-      where: { id: appointment.id },
-      data: { status: AppointmentStatus.RESCHEDULE_REQUESTED },
-    }),
-    db.appointmentChangeRequest.create({
-      data: {
-        appointmentId: appointment.id,
-        type: "RESCHEDULE",
-        requestedStartAt,
-        reason: input.reason,
-      },
-    }),
-  ]);
+  const requestedEndAt = selectedSlot.endsAt;
+  const holdMinutes = Math.min(
+    120,
+    Math.max(5, Number(process.env.APPOINTMENT_HOLD_MINUTES || 20)),
+  );
+  await db
+    .$transaction(async (transaction) => {
+      await transaction.appointmentHold.deleteMany({
+        where: {
+          OR: [
+            { appointmentId: appointment.id },
+            { status: "ACTIVE", expiresAt: { lte: new Date() } },
+          ],
+        },
+      });
+      await transaction.appointmentProposal.updateMany({
+        where: { appointmentId: appointment.id, status: "PENDING" },
+        data: { status: "SUPERSEDED", respondedAt: new Date() },
+      });
+      const proposal = await transaction.appointmentProposal.create({
+        data: {
+          appointmentId: appointment.id,
+          proposerSide: "CLIENT",
+          lawyerId: appointment.lawyerId,
+          startAt: requestedStartAt,
+          endAt: requestedEndAt,
+          modality: appointment.modality,
+          message: input.reason,
+        },
+      });
+      await transaction.appointmentHold.create({
+        data: {
+          appointmentId: appointment.id,
+          proposalId: proposal.id,
+          lawyerId: appointment.lawyerId,
+          resourceKey: reservationResourceKey(appointment.lawyerId),
+          startsAt: requestedStartAt,
+          endsAt: selectedSlot.occupiedUntil,
+          expiresAt: new Date(Date.now() + holdMinutes * 60 * 1000),
+        },
+      });
+      await transaction.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: AppointmentStatus.PROPOSED_BY_CLIENT,
+          proposedStartAt: requestedStartAt,
+          proposedEndAt: requestedEndAt,
+        },
+      });
+      await transaction.appointmentChangeRequest.create({
+        data: {
+          appointmentId: appointment.id,
+          type: "RESCHEDULE",
+          requestedStartAt,
+          reason: input.reason,
+        },
+      });
+    })
+    .catch((error) => {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new ServiceError(
+          "El horario solicitado acaba de dejar de estar disponible.",
+          409,
+          "SLOT_CONFLICT",
+        );
+      }
+      throw error;
+    });
   await notifyAppointmentReschedule(appointment, requestedStartAt);
   return { reference: appointment.reference };
 }

@@ -37,7 +37,7 @@ npm run admin:create -- --email administrador@xs-abogados.com
 unset ADMIN_INITIAL_PASSWORD
 ```
 
-La contraseña debe tener al menos 14 caracteres e incluir mayúscula, minúscula, número y símbolo. El script no la imprime. No conserve `ADMIN_INITIAL_PASSWORD` en Vercel.
+La contraseña debe tener 12–72 bytes UTF-8, no estar en la lista bloqueada y ser única; se recomienda una frase larga generada por un gestor. El script no la imprime. No conserve `ADMIN_INITIAL_PASSWORD` en Vercel.
 
 ## Seed y Prisma Studio
 

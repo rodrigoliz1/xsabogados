@@ -3,12 +3,12 @@
 import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import type { Article } from "@/data/articles";
+import type { ArticleListing } from "@/data/articles";
 
 import { ArticleGrid } from "./ArticleGrid";
 
 type ArticleExplorerProps = {
-  articles: readonly Article[];
+  articles: readonly ArticleListing[];
 };
 
 function normalize(value: string) {

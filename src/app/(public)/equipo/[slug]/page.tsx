@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ExternalLink,
+  Mail,
+  MessageCircle,
+  Phone,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LawyerPortrait } from "@/components/team/LawyerPortrait";
+import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
 import { getLawyerBySlug, lawyers } from "@/data/lawyers";
+import { db } from "@/lib/db";
+import { getPublicSiteSettings } from "@/server/services/site-settings-service";
 
 const SITE_URL = siteConfig.url;
 const appointmentAreaByLawyer: Record<string, string> = {
@@ -50,11 +60,11 @@ export async function generateMetadata({
       type: "profile",
       images: lawyer.image
         ? [
-          {
-            url: `${SITE_URL}${lawyer.image}`,
-            alt: lawyer.imageAlt ?? lawyer.name,
-          },
-        ]
+            {
+              url: `${SITE_URL}${lawyer.image}`,
+              alt: lawyer.imageAlt ?? lawyer.name,
+            },
+          ]
         : undefined,
     },
   };
@@ -72,6 +82,34 @@ export default async function LawyerProfilePage({ params }: LawyerPageProps) {
   const next = lawyers[(currentIndex + 1) % lawyers.length];
   const appointmentArea = appointmentAreaByLawyer[lawyer.slug] ?? "";
   const appointmentUrl = `/agenda?area=${appointmentArea}&profesional=${lawyer.slug}`;
+  const [storedContact, settings] = await Promise.all([
+    process.env.DATABASE_URL
+      ? db.lawyerProfile
+          .findUnique({
+            where: { slug: lawyer.slug },
+            select: { phone: true, emailPublic: true, linkedInUrl: true },
+          })
+          .catch(() => null)
+      : null,
+    getPublicSiteSettings(),
+  ]);
+  const phoneDisplay = storedContact?.phone || settings.phoneDisplay;
+  const phoneDigits = phoneDisplay.replace(/\D/g, "");
+  const phoneHref = storedContact?.phone
+    ? `tel:+${phoneDigits}`
+    : `tel:${settings.phoneE164}`;
+  const email = storedContact?.emailPublic || settings.contactEmail;
+  const linkedIn =
+    storedContact?.linkedInUrl ||
+    Object.entries(settings.socialLinks).find(([label]) =>
+      label.toLowerCase().includes("linkedin"),
+    )?.[1] ||
+    `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(lawyer.name)}`;
+  const whatsappNumber =
+    phoneDigits.length >= 10 && phoneDigits.length <= 15
+      ? phoneDigits
+      : settings.whatsappNumber;
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hola ${lawyer.name}, me gustaría consultar un asunto con XS ABOGADOS.`)}`;
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -119,10 +157,7 @@ export default async function LawyerProfilePage({ params }: LawyerPageProps) {
 
   return (
     <div className="bg-ink text-paper">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <section className="mx-auto max-w-shell px-5 pb-16 pt-32 sm:px-8 sm:pt-40 lg:px-12 lg:pb-24 lg:pt-48">
         <Link
@@ -215,6 +250,66 @@ export default async function LawyerProfilePage({ params }: LawyerPageProps) {
               />
             </Link>
           </div>
+          <section className="mt-8 border border-white/15 p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">
+              Contacto directo
+            </p>
+            <div className="mt-6 grid gap-px overflow-hidden border border-white/15 bg-white/15 sm:grid-cols-2">
+              {[
+                {
+                  href: `mailto:${email}`,
+                  label: "Correo",
+                  value: email,
+                  icon: Mail,
+                },
+                {
+                  href: phoneHref,
+                  label: "Celular",
+                  value: phoneDisplay,
+                  icon: Phone,
+                },
+                {
+                  href: whatsappUrl,
+                  label: "WhatsApp",
+                  value: "Iniciar conversación",
+                  icon: MessageCircle,
+                  external: true,
+                },
+                {
+                  href: linkedIn,
+                  label: "LinkedIn",
+                  value: "Consultar perfil",
+                  icon: ExternalLink,
+                  external: true,
+                },
+              ].map((contact) => {
+                const Icon = contact.icon;
+                return (
+                  <a
+                    key={contact.label}
+                    href={contact.href}
+                    target={contact.external ? "_blank" : undefined}
+                    rel={contact.external ? "noreferrer" : undefined}
+                    className="group flex min-h-28 flex-col justify-between bg-ink px-5 py-5 transition hover:bg-ink-3"
+                  >
+                    <Icon
+                      className="size-4 text-paper-quiet transition group-hover:text-paper"
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                    />
+                    <span>
+                      <span className="block text-[9px] font-semibold uppercase tracking-[0.16em] text-paper-quiet">
+                        {contact.label}
+                      </span>
+                      <span className="mt-2 block break-all text-sm text-paper-muted group-hover:text-paper">
+                        {contact.value}
+                      </span>
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
         </div>
       </section>
 

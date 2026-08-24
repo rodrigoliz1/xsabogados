@@ -23,20 +23,24 @@ export class ResendEmailProvider implements EmailProvider {
   }
 
   async send(message: EmailMessage) {
-    const result = await this.resend.emails.send({
-      from: this.from,
-      to: message.to,
-      subject: message.subject,
-      text: message.text,
-      html: message.html,
-      replyTo: message.replyTo,
-      tags: message.tags?.map((name) => ({ name, value: "transactional" })),
-      headers: message.metadata,
-    });
-    if (result.error || !result.data?.id) {
-      throw new Error(result.error?.message || "Resend no confirmó el envío.");
+    try {
+      const result = await this.resend.emails.send({
+        from: this.from,
+        to: message.to,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        replyTo: message.replyTo,
+        tags: message.tags?.map((name) => ({ name, value: "transactional" })),
+        headers: message.metadata,
+      });
+      if (result.error || !result.data?.id) {
+        throw new Error("Resend no confirmó el envío.");
+      }
+      return { providerId: result.data.id };
+    } catch {
+      throw new Error("Resend no pudo completar el envío transaccional.");
     }
-    return { providerId: result.data.id };
   }
 }
 

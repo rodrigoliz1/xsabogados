@@ -10,6 +10,6 @@ export type EmailMessage = {
 };
 
 export interface EmailProvider {
-  readonly name: "mock" | "resend" | "brevo";
+  readonly name: "mock" | "brevo" | "resend";
   send(message: EmailMessage): Promise<{ providerId: string }>;
 }

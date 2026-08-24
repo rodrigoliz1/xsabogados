@@ -5,22 +5,15 @@ import { redirect } from "next/navigation";
 import { ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
 
 import { isDemoAuthAllowed } from "@/lib/environment";
+import { safeInternalPath } from "@/lib/security/redirects";
 
 type LoginPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function safeCallback(value: string | string[] | undefined) {
-  return typeof value === "string" &&
-    value.startsWith("/") &&
-    !value.startsWith("//")
-    ? value
-    : "/portal/panel";
-}
-
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
-  const callbackUrl = safeCallback(params.callbackUrl);
+  const callbackUrl = safeInternalPath(params.callbackUrl);
   const session = await auth();
   const showDemoNotice = isDemoAuthAllowed();
 
@@ -34,6 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       await signIn("credentials", {
         email: String(formData.get("email") ?? ""),
         password: String(formData.get("password") ?? ""),
+        otp: String(formData.get("otp") ?? ""),
         redirectTo: callbackUrl,
       });
     } catch (error) {
@@ -129,6 +123,25 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 placeholder="nombre@empresa.com"
                 className="h-[52px] w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#d3d3d0]/60"
               />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                Código de seguridad
+              </span>
+              <input
+                name="otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={32}
+                placeholder="Solo si su cuenta tiene MFA"
+                aria-describedby="otp-help"
+                className="h-[52px] w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#d3d3d0]/60"
+              />
+              <span id="otp-help" className="mt-2 block text-xs text-white/35">
+                Use el código de su aplicación autenticadora o uno de
+                recuperación.
+              </span>
             </label>
             <label className="block">
               <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">

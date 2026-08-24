@@ -10,13 +10,47 @@ export type PublicApiResponse = {
 };
 
 export function ensureSameOrigin(request: Request) {
+  if (["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase())) return;
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite === "cross-site") {
+    throw new RequestSecurityError("Origen no permitido.", 403);
+  }
   const origin = request.headers.get("origin");
-  if (!origin) return;
-  const originUrl = new URL(origin);
+  const deployed =
+    Boolean(process.env.VERCEL_ENV) || process.env.NODE_ENV === "production";
+  if (!origin) {
+    if (deployed) throw new RequestSecurityError("Origen no permitido.", 403);
+    return;
+  }
+  let originUrl: URL;
+  try {
+    originUrl = new URL(origin);
+  } catch {
+    throw new RequestSecurityError("Origen no permitido.", 403);
+  }
   const requestUrl = new URL(request.url);
   const forwardedHost =
     request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (originUrl.host !== (forwardedHost ?? requestUrl.host)) {
+  const forwardedProtocol =
+    request.headers.get("x-forwarded-proto") ??
+    requestUrl.protocol.slice(0, -1);
+  const candidateOrigins = new Set([requestUrl.origin]);
+  if (forwardedHost) {
+    candidateOrigins.add(`${forwardedProtocol}://${forwardedHost}`);
+  }
+  for (const configured of [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.AUTH_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  ]) {
+    if (!configured) continue;
+    try {
+      candidateOrigins.add(new URL(configured).origin);
+    } catch {
+      // La validación centralizada reporta URLs de entorno inválidas.
+    }
+  }
+  if (!candidateOrigins.has(originUrl.origin)) {
     throw new RequestSecurityError("Origen no permitido.", 403);
   }
 }

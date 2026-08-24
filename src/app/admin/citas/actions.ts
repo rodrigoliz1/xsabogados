@@ -1,14 +1,14 @@
 "use server";
 
-import { AppointmentStatus, CalendarSyncStatus, Prisma } from "@prisma/client";
+import { AppointmentStatus, Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { getCalendarProvider } from "@/lib/calendar";
 import { db } from "@/lib/db";
 import { sanitizeMultiline } from "@/lib/validation";
 import { requireActor } from "@/server/policies";
+import { synchronizeAppointmentCalendar } from "@/server/services/calendar-sync-service";
 
 const actionSchema = z.object({
   appointmentId: z.string().cuid(),
@@ -26,7 +26,7 @@ const internalNotesSchema = actionSchema.extend({
     .pipe(z.string().max(4000)),
 });
 
-type AdminOperation = "confirm" | "cancel" | "reschedule";
+type AdminOperation = "cancel" | "reschedule";
 
 function actionUrl(parameter: "notice" | "error", value: string) {
   return `/admin/citas?${parameter}=${encodeURIComponent(value)}`;
@@ -53,49 +53,14 @@ async function loadMutableAppointment(
       lawyerId: true,
       internalNotes: true,
       reservationSlots: { select: { startsAt: true } },
+      holds: {
+        where: { status: "ACTIVE", expiresAt: { gt: new Date() } },
+        select: { id: true, startsAt: true, endsAt: true },
+      },
     },
   });
   if (!appointment) throw new AdminAppointmentStateError("not-found");
   return appointment;
-}
-
-async function confirmAppointment(appointmentId: string, actorId: string) {
-  await db.$transaction(async (transaction) => {
-    const appointment = await loadMutableAppointment(
-      transaction,
-      appointmentId,
-    );
-    if (
-      appointment.status !== AppointmentStatus.REQUESTED &&
-      appointment.status !== AppointmentStatus.PENDING_SYNC
-    ) {
-      throw new AdminAppointmentStateError("not-confirmable");
-    }
-    const updated = await transaction.appointment.updateMany({
-      where: {
-        id: appointment.id,
-        status: {
-          in: [AppointmentStatus.REQUESTED, AppointmentStatus.PENDING_SYNC],
-        },
-      },
-      data: { status: AppointmentStatus.CONFIRMED },
-    });
-    if (updated.count !== 1)
-      throw new AdminAppointmentStateError("concurrent-update");
-    await transaction.auditLog.create({
-      data: {
-        actorId,
-        action: "ADMIN_APPOINTMENT_CONFIRMED",
-        entityType: "Appointment",
-        entityId: appointment.id,
-        metadata: {
-          reference: appointment.reference,
-          previousStatus: appointment.status,
-          calendarSyncStatus: appointment.calendarSyncStatus,
-        },
-      },
-    });
-  });
 }
 
 async function cancelAppointment(appointmentId: string, actorId: string) {
@@ -111,6 +76,13 @@ async function cancelAppointment(appointmentId: string, actorId: string) {
     await transaction.appointmentReservationSlot.deleteMany({
       where: { appointmentId: current.id },
     });
+    await transaction.appointmentHold.deleteMany({
+      where: { appointmentId: current.id },
+    });
+    await transaction.appointmentProposal.updateMany({
+      where: { appointmentId: current.id, status: "PENDING" },
+      data: { status: "REJECTED", respondedAt: new Date() },
+    });
     const updated = await transaction.appointment.updateMany({
       where: {
         id: current.id,
@@ -122,7 +94,14 @@ async function cancelAppointment(appointmentId: string, actorId: string) {
           ],
         },
       },
-      data: { status: AppointmentStatus.CANCELLED, cancelledAt: new Date() },
+      data: {
+        status: AppointmentStatus.CANCELLED,
+        cancelledAt: new Date(),
+        calendarSyncStatus: "PENDING",
+        calendarSyncError: null,
+        calendarSyncLockedAt: null,
+        calendarSyncLockedBy: null,
+      },
     });
     if (updated.count !== 1)
       throw new AdminAppointmentStateError("concurrent-update");
@@ -150,31 +129,18 @@ async function cancelAppointment(appointmentId: string, actorId: string) {
     return current;
   });
 
-  if (!appointment.externalEventId) return;
   try {
-    await getCalendarProvider().cancelEvent(appointment.externalEventId);
-  } catch (error) {
-    await db.$transaction([
-      db.appointment.update({
-        where: { id: appointment.id },
-        data: {
-          calendarSyncStatus: CalendarSyncStatus.FAILED,
-          calendarSyncError:
-            error instanceof Error
-              ? error.message.slice(0, 500)
-              : "No fue posible cancelar el evento externo.",
-        },
-      }),
-      db.auditLog.create({
-        data: {
-          actorId,
-          action: "ADMIN_APPOINTMENT_CALENDAR_CANCEL_FAILED",
-          entityType: "Appointment",
-          entityId: appointment.id,
-          metadata: { reference: appointment.reference },
-        },
-      }),
-    ]);
+    await synchronizeAppointmentCalendar(appointment.id);
+  } catch {
+    await db.auditLog.create({
+      data: {
+        actorId,
+        action: "ADMIN_APPOINTMENT_CALENDAR_CANCEL_FAILED",
+        entityType: "Appointment",
+        entityId: appointment.id,
+        metadata: { reference: appointment.reference },
+      },
+    });
   }
 }
 
@@ -248,6 +214,35 @@ async function assignAppointmentLawyer(
         }),
       ]);
       if (!lawyer) throw new AdminAppointmentStateError("inactive-lawyer");
+      if (
+        (
+          [
+            AppointmentStatus.CANCELLED,
+            AppointmentStatus.COMPLETED,
+            AppointmentStatus.NO_SHOW,
+            AppointmentStatus.DECLINED,
+          ] as AppointmentStatus[]
+        ).includes(appointment.status)
+      ) {
+        throw new AdminAppointmentStateError("closed-appointment");
+      }
+
+      for (const hold of appointment.holds) {
+        const collision = await transaction.appointmentHold.findFirst({
+          where: {
+            appointmentId: { not: appointment.id },
+            resourceKey: `lawyer:${lawyer.id}`,
+            status: "ACTIVE",
+            expiresAt: { gt: new Date() },
+            startsAt: { lt: hold.endsAt },
+            endsAt: { gt: hold.startsAt },
+          },
+          select: { id: true },
+        });
+        if (collision) {
+          throw new AdminAppointmentStateError("lawyer-not-available");
+        }
+      }
 
       if (appointment.reservationSlots.length > 0) {
         await transaction.appointmentReservationSlot.deleteMany({
@@ -261,6 +256,17 @@ async function assignAppointmentLawyer(
           })),
         });
       }
+      await transaction.appointmentHold.updateMany({
+        where: { appointmentId: appointment.id, status: "ACTIVE" },
+        data: {
+          lawyerId: lawyer.id,
+          resourceKey: `lawyer:${lawyer.id}`,
+        },
+      });
+      await transaction.appointmentProposal.updateMany({
+        where: { appointmentId: appointment.id, status: "PENDING" },
+        data: { lawyerId: lawyer.id },
+      });
       await transaction.appointment.update({
         where: { id: appointment.id },
         data: { lawyerId: lawyer.id },
@@ -333,8 +339,6 @@ async function runAdminAppointmentAction(
 
   try {
     const actor = await requireActor(["ADMIN"]);
-    if (operation === "confirm")
-      await confirmAppointment(parsed.data.appointmentId, actor.id);
     if (operation === "cancel")
       await cancelAppointment(parsed.data.appointmentId, actor.id);
     if (operation === "reschedule")
@@ -350,19 +354,8 @@ async function runAdminAppointmentAction(
 
   revalidatePath("/admin/citas");
   redirect(
-    actionUrl(
-      "notice",
-      operation === "confirm"
-        ? "confirmed"
-        : operation === "cancel"
-          ? "cancelled"
-          : "reschedule",
-    ),
+    actionUrl("notice", operation === "cancel" ? "cancelled" : "reschedule"),
   );
-}
-
-export async function confirmAppointmentAction(formData: FormData) {
-  await runAdminAppointmentAction(formData, "confirm");
 }
 
 export async function cancelAppointmentAction(formData: FormData) {

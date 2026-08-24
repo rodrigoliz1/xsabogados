@@ -3,6 +3,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 import { EditorialImage } from "@/components/ui/editorial-image";
+import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
 import { editorialImages } from "@/data/editorial-images";
 
@@ -126,10 +127,7 @@ export default function FirmPage() {
 
   return (
     <div className="bg-ink text-paper">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <section className="relative flex min-h-[78svh] items-end overflow-hidden border-y border-white/15">
         <EditorialImage
@@ -170,15 +168,16 @@ export default function FirmPage() {
 
             <div className="mt-12 grid gap-7 text-base leading-8 text-black/65 sm:grid-cols-2">
               <p>
-                En XS ABOGADOS asesoramos y representamos a empresas, instituciones y
-                particulares mediante soluciones jurídicas diseñadas a partir de un
-                análisis riguroso de cada asunto.
+                En XS ABOGADOS asesoramos y representamos a empresas,
+                instituciones y particulares mediante soluciones jurídicas
+                diseñadas a partir de un análisis riguroso de cada asunto.
               </p>
 
               <p>
-                Nuestro enfoque integra conocimiento técnico, visión estratégica y
-                cercanía con el cliente para prevenir riesgos, proteger intereses y
-                atender controversias con claridad y responsabilidad.
+                Nuestro enfoque integra conocimiento técnico, visión estratégica
+                y cercanía con el cliente para prevenir riesgos, proteger
+                intereses y atender controversias con claridad y
+                responsabilidad.
               </p>
             </div>
           </div>

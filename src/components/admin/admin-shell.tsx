@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   MailWarning,
+  MessageSquareText,
   Menu,
   Settings2,
   ShieldCheck,
@@ -30,12 +31,26 @@ const navigation = [
     icon: CalendarRange,
   },
   { href: "/admin/clientes", label: "Clientes", icon: UsersRound },
+  { href: "/admin/usuarios", label: "Usuarios", icon: ShieldCheck },
+  { href: "/admin/abogados", label: "Abogados y socios", icon: UserRoundCog },
   { href: "/admin/asuntos", label: "Asuntos", icon: BriefcaseBusiness },
+  { href: "/admin/mensajes", label: "Mensajes", icon: MessageSquareText },
   { href: "/admin/equipo", label: "Equipo", icon: UserRoundCog },
   { href: "/admin/articulos", label: "Artículos", icon: BookOpenText },
   { href: "/admin/formularios", label: "Formularios", icon: ClipboardList },
   { href: "/admin/correos", label: "Correos", icon: MailWarning },
+  { href: "/admin/auditoria", label: "Auditoría", icon: ShieldCheck },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings2 },
+  {
+    href: "/portal/seguridad/sesiones",
+    label: "Seguridad de cuenta",
+    icon: ShieldCheck,
+  },
+  {
+    href: "/portal/seguridad/mfa",
+    label: "App autenticadora",
+    icon: ShieldCheck,
+  },
 ];
 
 export function AdminShell({

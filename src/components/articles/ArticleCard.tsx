@@ -2,11 +2,11 @@ import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import type { Article } from "@/data/articles";
+import type { ArticleListing } from "@/data/articles";
 import { articleImages } from "@/data/editorial-images";
 
 type ArticleCardProps = {
-  article: Article;
+  article: ArticleListing;
 };
 
 function formatDate(value: string) {
@@ -19,8 +19,11 @@ function formatDate(value: string) {
 }
 
 export function ArticleCard({ article }: ArticleCardProps) {
-  const image =
+  const staticImage =
     articleImages[article.slug as keyof typeof articleImages] ?? undefined;
+  const image = article.imageUrl
+    ? { src: article.imageUrl, alt: article.imageAlt || article.title }
+    : staticImage;
 
   return (
     <article className="group relative flex min-h-[25rem] flex-col overflow-hidden border border-white/15 bg-ink-2 p-6 transition duration-500 hover:border-white/35 hover:bg-ink-3 sm:p-8">
@@ -32,7 +35,10 @@ export function ArticleCard({ article }: ArticleCardProps) {
             fill
             sizes="(max-width: 1024px) 100vw, 33vw"
             src={image.src}
-            style={{ objectPosition: image.position ?? "center" }}
+            style={{
+              objectPosition:
+                "position" in image ? (image.position ?? "center") : "center",
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink-2 via-transparent to-black/10" />
         </div>

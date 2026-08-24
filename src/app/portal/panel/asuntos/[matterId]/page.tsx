@@ -1,4 +1,9 @@
-import { ArrowLeft, Download, MessageSquareText } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Download,
+  MessageSquareText,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -124,6 +129,13 @@ export default async function PortalMatterPage({
           >
             <MessageSquareText aria-hidden="true" className="size-4" /> Mensajes
             de este asunto
+          </Link>
+          <Link
+            className="button-outline w-full"
+            href={`/agenda?origen=portal&asunto=${matter.id}`}
+          >
+            <CalendarDays aria-hidden="true" className="size-4" /> Agendar con
+            mi abogado
           </Link>
         </div>
       </section>

@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
-
 import { ArticleExplorer } from "@/components/articles/ArticleExplorer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
-import { articleDisclaimer, articles } from "@/data/articles";
+import {
+  articleDisclaimer,
+  articles,
+  type ArticleListing,
+} from "@/data/articles";
+import { db } from "@/lib/db";
 
 const SITE_URL = siteConfig.url;
 
@@ -20,7 +25,50 @@ export const metadata: Metadata = {
   },
 };
 
-export default function InsightsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function InsightsPage() {
+  const published = process.env.DATABASE_URL
+    ? await db.article
+        .findMany({
+          where: { status: "PUBLISHED", publishedAt: { not: null } },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            excerpt: true,
+            publishedAt: true,
+            readingMinutes: true,
+            heroMedia: { select: { id: true, altText: true } },
+            author: { select: { name: true } },
+            practiceArea: { select: { name: true } },
+          },
+          orderBy: { publishedAt: "desc" },
+        })
+        .catch(() => [])
+    : [];
+  const storedListings: ArticleListing[] = published
+    .filter((article) => !articles.some((item) => item.slug === article.slug))
+    .map((article, index) => ({
+      slug: article.slug,
+      title: article.title,
+      excerpt: article.excerpt,
+      author: article.author?.name || "XS ABOGADOS",
+      practiceArea: article.practiceArea?.name || "Análisis jurídico",
+      practiceAreaSlug: "",
+      publishedAt: (article.publishedAt || new Date())
+        .toISOString()
+        .slice(0, 10),
+      readingTime: `${article.readingMinutes} min de lectura`,
+      index: String(articles.length + index + 1).padStart(2, "0"),
+      imageUrl: article.heroMedia
+        ? `/api/media/${article.heroMedia.id}`
+        : undefined,
+      imageAlt: article.heroMedia?.altText,
+    }));
+  const allArticles = [...articles, ...storedListings].sort((left, right) =>
+    right.publishedAt.localeCompare(left.publishedAt),
+  );
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -30,7 +78,7 @@ export default function InsightsPage() {
         url: `${SITE_URL}/insights`,
         description:
           "Perspectivas jurídicas de carácter general elaboradas por XS ABOGADOS.",
-        hasPart: articles.map((article) => ({
+        hasPart: allArticles.map((article) => ({
           "@type": "Article",
           headline: article.title,
           url: `${SITE_URL}/insights/${article.slug}`,
@@ -58,10 +106,7 @@ export default function InsightsPage() {
 
   return (
     <div className="bg-ink text-paper">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <section className="mx-auto max-w-shell px-5 pb-24 pt-36 sm:px-8 sm:pt-44 lg:px-12 lg:pb-32 lg:pt-52">
         <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">
@@ -81,7 +126,7 @@ export default function InsightsPage() {
       </section>
 
       <section className="mx-auto max-w-shell px-5 pb-28 sm:px-8 lg:px-12 lg:pb-40">
-        <ArticleExplorer articles={articles} />
+        <ArticleExplorer articles={allArticles} />
         <p className="mt-6 max-w-3xl text-xs leading-6 text-paper-quiet">
           {articleDisclaimer}
         </p>

@@ -46,7 +46,10 @@ const method = [
 
 export default function HomePage() {
   const partners = lawyers.filter(
-    (lawyer) => lawyer.role === "Socio" || lawyer.role === "Socia" || lawyer.role === "Socio Director",
+    (lawyer) =>
+      lawyer.role === "Socio" ||
+      lawyer.role === "Socia" ||
+      lawyer.role === "Socio Director",
   );
 
   return (
@@ -130,7 +133,10 @@ export default function HomePage() {
                 </p>
                 <div>
                   <p className="text-base leading-7 text-ink/70">
-                    Nuestra práctica integra experiencia en derecho corporativo, bancario, financiero, civil, mercantil, administrativo y constitucional para responder con eficacia a los desafíos legales actuales.
+                    Nuestra práctica integra experiencia en derecho corporativo,
+                    bancario, financiero, civil, mercantil, administrativo y
+                    constitucional para responder con eficacia a los desafíos
+                    legales actuales.
                   </p>
                   <Link
                     className="mt-7 inline-flex items-center gap-2 border-b border-black/30 pb-1 text-sm font-semibold"
@@ -243,8 +249,6 @@ export default function HomePage() {
           </div>
         </Container>
       </section>
-
-
     </>
   );
 }

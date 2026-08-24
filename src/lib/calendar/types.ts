@@ -21,5 +21,9 @@ export interface CalendarProvider {
     endsAt: Date,
   ): Promise<CalendarBusyInterval[]>;
   createEvent(input: CalendarEventInput): Promise<{ externalEventId: string }>;
+  updateEvent(
+    externalEventId: string,
+    input: CalendarEventInput,
+  ): Promise<{ externalEventId: string }>;
   cancelEvent(externalEventId: string): Promise<void>;
 }

@@ -2,12 +2,15 @@ import { CalendarDays, Clock3, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { auth } from "@/auth";
 import { AppointmentWizard } from "@/components/appointments/appointment-wizard";
 import { AppointmentManager } from "@/components/appointments/appointment-manager";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Container } from "@/components/ui/container";
 import { EditorialImage } from "@/components/ui/editorial-image";
 import { editorialImages } from "@/data/editorial-images";
+import { db } from "@/lib/db";
+import { hashToken } from "@/lib/security/tokens";
 
 export const metadata: Metadata = {
   title: "Agenda una consulta",
@@ -24,6 +27,77 @@ export default async function AgendaPage({
   const params = await searchParams;
   const manageToken =
     typeof params.gestionar === "string" ? params.gestionar : "";
+  const managedAppointment = manageToken
+    ? await db.appointment.findUnique({
+        where: { manageTokenHash: hashToken(manageToken) },
+        select: { lawyerId: true, modality: true },
+      })
+    : null;
+  const portalOrigin = params.origen === "portal";
+  const requestedMatterId =
+    typeof params.asunto === "string" ? params.asunto : undefined;
+  const session = portalOrigin ? await auth() : null;
+  const portalUser =
+    session?.user?.active && session.user.role === "CLIENT"
+      ? await db.user.findUnique({
+          where: { id: session.user.id },
+          select: {
+            name: true,
+            email: true,
+            clientProfile: { select: { id: true, phone: true, company: true } },
+          },
+        })
+      : null;
+  const portalMatter = portalUser?.clientProfile
+    ? await db.matter.findFirst({
+        where: {
+          clientId: portalUser.clientProfile.id,
+          status: "ACTIVE",
+          ...(requestedMatterId ? { id: requestedMatterId } : {}),
+        },
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          reference: true,
+          practiceArea: { select: { slug: true } },
+          assignments: {
+            where: { role: { in: ["LEAD", "LEAD_LAWYER"] } },
+            orderBy: { assignedAt: "asc" },
+            take: 1,
+            select: {
+              lawyer: {
+                select: {
+                  slug: true,
+                  displayName: true,
+                  areas: {
+                    orderBy: { isPrimary: "desc" },
+                    take: 1,
+                    select: { practiceArea: { select: { slug: true } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+    : null;
+  const leadLawyer = portalMatter?.assignments[0]?.lawyer;
+  const portalArea =
+    portalMatter?.practiceArea?.slug || leadLawyer?.areas[0]?.practiceArea.slug;
+  const portalContext =
+    portalUser?.clientProfile && portalMatter && portalArea && leadLawyer
+      ? {
+          matterId: portalMatter.id,
+          matterReference: portalMatter.reference,
+          lawyerName: leadLawyer.displayName,
+          practiceArea: portalArea,
+          lawyerSlug: leadLawyer.slug,
+          fullName: portalUser.name,
+          company: portalUser.clientProfile.company || undefined,
+          email: portalUser.email,
+          phone: portalUser.clientProfile.phone || "",
+        }
+      : undefined;
   const mexicoToday = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City",
     year: "numeric",
@@ -75,14 +149,22 @@ export default async function AgendaPage({
             />
           </div>
           {manageToken ? (
-            <AppointmentManager baseDate={mexicoToday} token={manageToken} />
+            <AppointmentManager
+              baseDate={mexicoToday}
+              token={manageToken}
+              lawyerId={managedAppointment?.lawyerId ?? undefined}
+              modality={managedAppointment?.modality}
+            />
           ) : (
             <Suspense
               fallback={
                 <div className="min-h-[650px] animate-pulse rounded-3xl border border-white/10 bg-white/[0.025] motion-reduce:animate-none" />
               }
             >
-              <AppointmentWizard baseDate={mexicoToday} />
+              <AppointmentWizard
+                baseDate={mexicoToday}
+                portalContext={portalContext}
+              />
             </Suspense>
           )}
         </div>

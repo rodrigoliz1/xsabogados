@@ -1,9 +1,9 @@
-import type { Article } from "@/data/articles";
+import type { ArticleListing } from "@/data/articles";
 
 import { ArticleCard } from "./ArticleCard";
 
 type ArticleGridProps = {
-  articles: readonly Article[];
+  articles: readonly ArticleListing[];
 };
 
 export function ArticleGrid({ articles }: ArticleGridProps) {

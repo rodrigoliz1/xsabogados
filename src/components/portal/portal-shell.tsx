@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import {
   BriefcaseBusiness,
   CalendarDays,
+  CalendarRange,
+  BookOpenText,
+  Bell,
   ChevronRight,
   Clock3,
   FileText,
@@ -45,6 +48,48 @@ const navigation: PortalNavigationItem[] = [
     icon: UserRound,
     roles: ["CLIENT"],
   },
+  {
+    href: "/portal/seguridad/contrasena",
+    label: "Seguridad",
+    icon: ShieldCheck,
+  },
+  {
+    href: "/portal/seguridad/mfa",
+    label: "App autenticadora",
+    icon: ShieldCheck,
+  },
+];
+
+const lawyerNavigation: PortalNavigationItem[] = [
+  { href: "/portal/abogado", label: "Resumen", icon: LayoutDashboard },
+  {
+    href: "/portal/abogado/asuntos",
+    label: "Asuntos",
+    icon: BriefcaseBusiness,
+  },
+  { href: "/portal/abogado/citas", label: "Citas", icon: CalendarDays },
+  {
+    href: "/portal/abogado/disponibilidad",
+    label: "Disponibilidad",
+    icon: CalendarRange,
+  },
+  {
+    href: "/portal/abogado/mensajes",
+    label: "Mensajes",
+    icon: MessageSquareText,
+  },
+  { href: "/portal/abogado/articulos", label: "Artículos", icon: BookOpenText },
+  { href: "/portal/abogado/perfil", label: "Mi perfil", icon: UserRound },
+  {
+    href: "/portal/seguridad/sesiones",
+    label: "Seguridad",
+    icon: ShieldCheck,
+  },
+  {
+    href: "/portal/seguridad/mfa",
+    label: "App autenticadora",
+    icon: ShieldCheck,
+  },
 ];
 
 type PortalShellProps = {
@@ -53,6 +98,7 @@ type PortalShellProps = {
   userEmail: string;
   userRole: PortalUserRole;
   signOutAction: () => Promise<void>;
+  unreadNotifications?: number;
 };
 
 export function PortalShell({
@@ -61,6 +107,7 @@ export function PortalShell({
   userEmail,
   userRole,
   signOutAction,
+  unreadNotifications = 0,
 }: PortalShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -97,7 +144,7 @@ export function PortalShell({
 
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#080808]/90 px-4 backdrop-blur-xl lg:hidden">
         <Link
-          href="/portal/panel"
+          href={userRole === "LAWYER" ? "/portal/abogado" : "/portal/panel"}
           className="flex items-center gap-3"
           aria-label="XS Abogados · Portal"
         >
@@ -166,9 +213,27 @@ export function PortalShell({
               />
               <span>Sesión privada protegida</span>
             </div>
-            <span className="inline-flex items-center rounded-full border border-[#d3d3d0]/35 bg-[#d3d3d0]/10 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#f7f7f5]">
-              Acceso verificado
-            </span>
+            <div className="flex items-center gap-2">
+              <Link
+                href={
+                  userRole === "LAWYER"
+                    ? "/portal/abogado/notificaciones"
+                    : "/portal/panel/notificaciones"
+                }
+                className="relative grid size-9 place-items-center rounded-full border border-white/10 text-white/55"
+                aria-label={`${unreadNotifications} notificaciones sin leer`}
+              >
+                <Bell className="size-4" aria-hidden="true" />
+                {unreadNotifications ? (
+                  <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-white px-1 text-[8px] font-bold text-black">
+                    {Math.min(99, unreadNotifications)}
+                  </span>
+                ) : null}
+              </Link>
+              <span className="hidden items-center rounded-full border border-[#d3d3d0]/35 bg-[#d3d3d0]/10 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#f7f7f5] sm:inline-flex">
+                Acceso verificado
+              </span>
+            </div>
           </div>
           {children}
         </div>
@@ -194,6 +259,9 @@ function SidebarContent({
   signOutAction: () => Promise<void>;
   onNavigate?: () => void;
 }) {
+  const navigationItems = userRole === "LAWYER" ? lawyerNavigation : navigation;
+  const portalLabel =
+    userRole === "LAWYER" ? "Portal profesional" : "Portal de clientes";
   return (
     <>
       <div className="border-b border-white/10 px-7 py-7">
@@ -205,8 +273,7 @@ function SidebarContent({
           <span className="font-serif text-4xl tracking-[-0.07em]">XS</span>
           <span className="h-8 w-px bg-white/20" />
           <span className="text-[9px] font-semibold uppercase leading-4 tracking-[0.25em] text-white/50">
-            Portal de
-            <br /> clientes
+            {portalLabel}
           </span>
         </Link>
       </div>
@@ -216,14 +283,16 @@ function SidebarContent({
         aria-label="Navegación del portal"
       >
         <p className="px-3 pb-3 text-[9px] font-semibold uppercase tracking-[0.24em] text-white/30">
-          Expediente digital
+          {userRole === "LAWYER"
+            ? "Operación profesional"
+            : "Expediente digital"}
         </p>
         <ul className="space-y-1">
-          {navigation
+          {navigationItems
             .filter((item) => !item.roles || item.roles.includes(userRole))
             .map((item) => {
               const isActive =
-                item.href === "/portal/panel"
+                item.href === "/portal/panel" || item.href === "/portal/abogado"
                   ? pathname === item.href
                   : pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -266,7 +335,7 @@ function SidebarContent({
               ? "/portal/panel/perfil"
               : userRole === "ADMIN"
                 ? "/admin"
-                : "/portal/panel"
+                : "/portal/abogado"
           }
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-white/[0.04]"

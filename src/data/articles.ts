@@ -4,7 +4,7 @@ export type ArticleSection = {
   points?: readonly string[];
 };
 
-export type Article = {
+export type ArticleListing = {
   slug: string;
   title: string;
   excerpt: string;
@@ -14,6 +14,11 @@ export type Article = {
   publishedAt: string;
   readingTime: string;
   index: string;
+  imageUrl?: string;
+  imageAlt?: string;
+};
+
+export type Article = ArticleListing & {
   isSample: boolean;
   introduction: readonly string[];
   sections: readonly ArticleSection[];

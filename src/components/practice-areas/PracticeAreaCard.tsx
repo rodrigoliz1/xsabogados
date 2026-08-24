@@ -12,9 +12,7 @@ type PracticeAreaCardProps = {
 export function PracticeAreaCard({ area }: PracticeAreaCardProps) {
   const image =
     Number(area.index) % 2 === 1
-      ? practiceAreaImages[
-          area.slug as keyof typeof practiceAreaImages
-        ]
+      ? practiceAreaImages[area.slug as keyof typeof practiceAreaImages]
       : undefined;
 
   return (

@@ -14,6 +14,10 @@ export class MockCalendarProvider implements CalendarProvider {
     return { externalEventId: `mock-${input.reference.toLowerCase()}` };
   }
 
+  async updateEvent(externalEventId: string) {
+    return { externalEventId };
+  }
+
   async cancelEvent() {
     return Promise.resolve();
   }

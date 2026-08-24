@@ -25,6 +25,9 @@ EMAIL_FROM_NAME="XS ABOGADOS"
 EMAIL_REPLY_TO=
 CONTACT_RECIPIENT_EMAIL=contacto@xs-abogados.com
 BREVO_SANDBOX_MODE=true
+EMAIL_CRON_SECRET=
+DATA_ENCRYPTION_KEY_VERSION=v1
+DATA_ENCRYPTION_KEY_CURRENT=
 ```
 
 Use sandbox en las primeras pruebas de Preview. Después pruebe una entrega real a destinatarios autorizados y establezca `BREVO_SANDBOX_MODE=false` en Production.
@@ -39,6 +42,8 @@ Use sandbox en las primeras pruebas de Preview. Después pruebe una entrega real
 4. Pruebe recuperación de contraseña y enlaces absolutos.
 5. Pruebe cancelación y reprogramación.
 6. Revise los logs transaccionales de Brevo, rebotes y bloqueos.
-7. Revise `/admin/correos`; los fallos pueden reintentarse una sola vez por acción confirmada y quedan auditados.
+7. Configure el cron autenticado de `/api/cron/email-outbox` y revise `/admin/correos`; los fallos usan backoff/dead letter y ADMIN puede reencolarlos con auditoría.
 
-Los errores guardados son deliberadamente genéricos: no incluyen API keys, tokens, cuerpos remotos ni información jurídica completa.
+La carga del outbox se cifra con AES-256-GCM y se limpia al alcanzar un estado terminal. Los errores guardados son deliberadamente genéricos: no incluyen API keys, tokens, cuerpos remotos ni información jurídica completa.
+
+Además de contacto, citas y recuperación, Brevo entrega invitaciones de cuenta, activación, avances visibles, avisos de mensaje, propuestas de cita y decisiones editoriales. Son correos exclusivamente transaccionales; no se crean campañas, listas ni automatizaciones comerciales.

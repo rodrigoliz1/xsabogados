@@ -11,7 +11,7 @@ export function RetryEmailButton({
     <form
       action={action}
       onSubmit={(event) => {
-        if (!window.confirm("¿Reintentar este correo transaccional ahora?")) {
+        if (!window.confirm("¿Reencolar este correo transaccional?")) {
           event.preventDefault();
         }
       }}
@@ -21,7 +21,7 @@ export function RetryEmailButton({
         className="rounded-full border border-black/15 bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-[0.13em] text-black/60 transition hover:border-black/30 hover:text-black"
         type="submit"
       >
-        Reintentar
+        Reencolar
       </button>
     </form>
   );

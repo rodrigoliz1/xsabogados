@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { WhatsAppButton } from "@/components/layout/whatsapp-button";
+import { JsonLd } from "@/components/seo/json-ld";
 import {
   getPublicSiteSettings,
   getSettingsWhatsAppUrl,
@@ -50,12 +51,7 @@ export default async function PublicLayout({
         firmName={settings.firmName}
         href={getSettingsWhatsAppUrl(settings)}
       />
-      <script
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(legalService).replace(/</g, "\\u003c"),
-        }}
-        type="application/ld+json"
-      />
+      <JsonLd data={legalService} />
     </>
   );
 }

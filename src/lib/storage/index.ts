@@ -2,6 +2,7 @@ import "server-only";
 
 import path from "node:path";
 
+import { getDocumentMaxUploadBytes } from "@/lib/documents/config";
 import { LocalPrivateStorageProvider } from "@/lib/storage/local";
 import { S3PrivateStorageProvider } from "@/lib/storage/s3";
 import {
@@ -11,17 +12,14 @@ import {
 
 export * from "./types";
 
-const MAX_PRIVATE_FILE_SIZE = 10 * 1024 * 1024;
-
 export function validatePrivateUpload(input: {
   bytes: Uint8Array;
   declaredMimeType: string;
+  maximumBytes?: number;
 }) {
-  if (
-    input.bytes.byteLength === 0 ||
-    input.bytes.byteLength > MAX_PRIVATE_FILE_SIZE
-  ) {
-    throw new Error("El archivo debe pesar entre 1 byte y 10 MB.");
+  const maximumBytes = input.maximumBytes ?? getDocumentMaxUploadBytes();
+  if (input.bytes.byteLength === 0 || input.bytes.byteLength > maximumBytes) {
+    throw new Error("El archivo está vacío o supera el límite permitido.");
   }
   if (
     !ALLOWED_PRIVATE_DOCUMENT_TYPES.includes(
@@ -48,10 +46,27 @@ export function validatePrivateUpload(input: {
     bytes[1] === 0x4b &&
     bytes[2] === 0x03 &&
     bytes[3] === 0x04;
+  const isWebp =
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50;
+  const isAvif =
+    bytes[4] === 0x66 &&
+    bytes[5] === 0x74 &&
+    bytes[6] === 0x79 &&
+    bytes[7] === 0x70 &&
+    ["avif", "avis"].includes(String.fromCharCode(...bytes.slice(8, 12)));
   const signatureMatches =
     (input.declaredMimeType === "application/pdf" && isPdf) ||
     (input.declaredMimeType === "image/jpeg" && isJpeg) ||
     (input.declaredMimeType === "image/png" && isPng) ||
+    (input.declaredMimeType === "image/webp" && isWebp) ||
+    (input.declaredMimeType === "image/avif" && isAvif) ||
     (input.declaredMimeType.includes("officedocument") && isZip);
   if (!signatureMatches)
     throw new Error("El contenido del archivo no coincide con su formato.");
@@ -76,6 +91,10 @@ export function getPrivateStorageProvider() {
       bucket,
       accessKeyId,
       secretAccessKey,
+      sessionToken: process.env.S3_SESSION_TOKEN,
+      requestTimeoutMs: Number(process.env.S3_REQUEST_TIMEOUT_MS || 12_000),
+      serverSideEncryption: process.env.S3_SERVER_SIDE_ENCRYPTION || "AES256",
+      kmsKeyId: process.env.S3_KMS_KEY_ID,
     });
   }
   if (provider !== "local") {

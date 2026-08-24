@@ -46,6 +46,7 @@ export const metadata: Metadata = {
   description:
     "Acceso privado para consultar asuntos, actuaciones, documentos, citas y mensajes de clientes de XS ABOGADOS.",
   alternates: { canonical: "/portal" },
+  robots: { index: false, follow: false },
 };
 
 export default async function PortalLandingPage() {
@@ -55,7 +56,11 @@ export default async function PortalLandingPage() {
   ]);
   const hasActiveSession = session?.user?.active === true;
   const destination = hasActiveSession
-    ? "/portal/panel"
+    ? session.user.role === "ADMIN"
+      ? "/admin"
+      : session.user.role === "LAWYER"
+        ? "/portal/abogado"
+        : "/portal/panel"
     : "/portal/iniciar-sesion";
   const cta = hasActiveSession ? "Continuar al panel" : "Iniciar sesión";
 

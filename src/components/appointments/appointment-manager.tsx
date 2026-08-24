@@ -13,9 +13,13 @@ type Mode = "menu" | "cancel" | "reschedule" | "done";
 export function AppointmentManager({
   baseDate,
   token,
+  lawyerId,
+  modality,
 }: {
   baseDate: string;
   token: string;
+  lawyerId?: string;
+  modality?: "IN_PERSON" | "VIDEO_CALL" | "PHONE_CALL";
 }) {
   const [mode, setMode] = useState<Mode>("menu");
   const [reason, setReason] = useState("");
@@ -34,10 +38,20 @@ export function AppointmentManager({
       setLoadingSlots(true);
       setTime("");
       try {
-        const response = await fetch(
-          `/api/agenda/disponibilidad?date=${date}`,
-          { signal: controller.signal },
-        );
+        const query = new URLSearchParams({ date });
+        if (lawyerId) query.set("lawyerId", lawyerId);
+        if (modality)
+          query.set(
+            "modality",
+            {
+              IN_PERSON: "PRESENCIAL",
+              VIDEO_CALL: "VIDEOLLAMADA",
+              PHONE_CALL: "TELEFONICA",
+            }[modality],
+          );
+        const response = await fetch(`/api/agenda/disponibilidad?${query}`, {
+          signal: controller.signal,
+        });
         const payload = (await response.json()) as { slots?: string[] };
         setSlots(response.ok ? (payload.slots ?? []) : []);
       } catch (requestError) {
@@ -48,7 +62,7 @@ export function AppointmentManager({
     };
     void load();
     return () => controller.abort();
-  }, [date, mode]);
+  }, [date, lawyerId, modality, mode]);
 
   async function submit(action: "cancelar" | "reprogramar") {
     setError("");

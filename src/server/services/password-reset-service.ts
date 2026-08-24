@@ -21,13 +21,17 @@ export async function requestPasswordReset(email: string) {
   if (!user || demoAccountBlocked(user.email)) return;
 
   const { token, tokenHash } = createSecureToken();
+  const expiryMinutes = Math.min(
+    120,
+    Math.max(10, Number(process.env.PASSWORD_RESET_EXPIRY_MINUTES || 30)),
+  );
   await db.actionToken.create({
     data: {
       userId: user.id,
       email: user.email,
       type: TokenType.PASSWORD_RESET,
       tokenHash,
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + expiryMinutes * 60 * 1000),
     },
   });
   const resetUrl = new URL("/portal/restablecer", getSiteUrl());
@@ -38,7 +42,7 @@ export async function requestPasswordReset(email: string) {
     greeting: `Hola ${user.name},`,
     paragraphs: [
       "Recibimos una solicitud para restablecer la contraseña de su cuenta.",
-      "El enlace vence en una hora y solo puede utilizarse una vez. Si usted no hizo esta solicitud, ignore este mensaje.",
+      `El enlace vence en ${expiryMinutes} minutos y solo puede utilizarse una vez. Si usted no hizo esta solicitud, ignore este mensaje.`,
     ],
     action: {
       label: "Restablecer contraseña",

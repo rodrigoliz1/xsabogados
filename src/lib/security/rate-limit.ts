@@ -35,6 +35,11 @@ function rateLimitSalt() {
 }
 
 function clientAddress(request: Request) {
+  const trustProxy =
+    Boolean(process.env.VERCEL_ENV) ||
+    process.env.TRUST_PROXY_HEADERS === "true" ||
+    process.env.NODE_ENV !== "production";
+  if (!trustProxy) return "untrusted-proxy";
   const forwarded = request.headers
     .get("x-forwarded-for")
     ?.split(",")[0]
@@ -72,8 +77,12 @@ export async function enforceRateLimit(input: {
   secondaryKey?: string;
 }) {
   const now = Date.now();
-  const identity = `${clientAddress(input.request)}:${input.secondaryKey?.toLowerCase() ?? ""}`;
-  const keyHash = hashKey(identity);
+  const identities = [
+    `ip:${clientAddress(input.request)}`,
+    ...(input.secondaryKey
+      ? [`subject:${input.secondaryKey.trim().toLowerCase()}`]
+      : []),
+  ];
   const windowStartMs = Math.floor(now / input.windowMs) * input.windowMs;
   const windowStart = new Date(windowStartMs);
   const expiresAt = new Date(windowStartMs + input.windowMs);
@@ -85,18 +94,19 @@ export async function enforceRateLimit(input: {
   }
 
   if (provider === "memory") {
-    if (isPublicProduction() && !globalForRateLimit.xsRateLimitWarningShown) {
-      console.warn(
-        "RATE_LIMIT_PROVIDER=memory no ofrece límites globales entre funciones.",
+    if (isPublicProduction()) {
+      throw new Error(
+        "RATE_LIMIT_PROVIDER=memory no está permitido en producción.",
       );
-      globalForRateLimit.xsRateLimitWarningShown = true;
     }
-    memoryLimit(
-      `${input.scope}:${keyHash}:${windowStartMs}`,
-      input.limit,
-      input.windowMs,
-      now,
-    );
+    for (const identity of identities) {
+      memoryLimit(
+        `${input.scope}:${hashKey(identity)}:${windowStartMs}`,
+        input.limit,
+        input.windowMs,
+        now,
+      );
+    }
     return;
   }
 
@@ -106,28 +116,43 @@ export async function enforceRateLimit(input: {
         "DATABASE_URL es obligatoria para RATE_LIMIT_PROVIDER=database.",
       );
     }
-    memoryLimit(
-      `${input.scope}:${keyHash}:${windowStartMs}`,
-      input.limit,
-      input.windowMs,
-      now,
-    );
+    for (const identity of identities) {
+      memoryLimit(
+        `${input.scope}:${hashKey(identity)}:${windowStartMs}`,
+        input.limit,
+        input.windowMs,
+        now,
+      );
+    }
     return;
   }
 
   try {
-    const bucket = await db.rateLimitBucket.upsert({
-      where: {
-        scope_keyHash_windowStart: { scope: input.scope, keyHash, windowStart },
-      },
-      create: { scope: input.scope, keyHash, windowStart, expiresAt, count: 1 },
-      update: { count: { increment: 1 }, expiresAt },
-      select: { count: true },
-    });
-    if (bucket.count > input.limit) {
-      throw new RateLimitError(
-        Math.max(1, Math.ceil((expiresAt.getTime() - now) / 1000)),
-      );
+    for (const identity of identities) {
+      const keyHash = hashKey(identity);
+      const bucket = await db.rateLimitBucket.upsert({
+        where: {
+          scope_keyHash_windowStart: {
+            scope: input.scope,
+            keyHash,
+            windowStart,
+          },
+        },
+        create: {
+          scope: input.scope,
+          keyHash,
+          windowStart,
+          expiresAt,
+          count: 1,
+        },
+        update: { count: { increment: 1 }, expiresAt },
+        select: { count: true },
+      });
+      if (bucket.count > input.limit) {
+        throw new RateLimitError(
+          Math.max(1, Math.ceil((expiresAt.getTime() - now) / 1000)),
+        );
+      }
     }
   } catch (error) {
     if (error instanceof RateLimitError) throw error;
@@ -137,11 +162,13 @@ export async function enforceRateLimit(input: {
     ) {
       throw error;
     }
-    memoryLimit(
-      `${input.scope}:${keyHash}:${windowStartMs}`,
-      input.limit,
-      input.windowMs,
-      now,
-    );
+    for (const identity of identities) {
+      memoryLimit(
+        `${input.scope}:${hashKey(identity)}:${windowStartMs}`,
+        input.limit,
+        input.windowMs,
+        now,
+      );
+    }
   }
 }

@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { DatabaseZap, UsersRound } from "lucide-react";
+import Link from "next/link";
 
 import { AdminHeading, AdminStatus } from "@/components/admin/admin-primitives";
 import { db } from "@/lib/db";
@@ -205,6 +206,12 @@ export default async function ClientsPage() {
                     <AdminStatus tone={presentation.tone}>
                       {presentation.label}
                     </AdminStatus>
+                    <Link
+                      href={`/admin/clientes/${client.id}`}
+                      className="mt-2 block text-[9px] font-bold uppercase tracking-[0.13em] text-black/45 hover:text-black"
+                    >
+                      Ver detalle
+                    </Link>
                   </div>
                 </article>
               );

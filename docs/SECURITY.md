@@ -1,17 +1,20 @@
 # Seguridad y privacidad
 
+El threat model, controles, rotación, respuesta a incidentes y checklist OWASP completos están en [SECURITY_HARDENING.md](./SECURITY_HARDENING.md).
+
 ## Controles implementados
 
 - Validación Zod en cliente y servidor, sanitización, longitudes máximas y campos estrictos.
 - Honeypot, verificación de origen, límites de payload y rate limiting con identificadores de red hasheados mediante `RATE_LIMIT_SALT`.
-- Auth.js con cookies `httpOnly`, `secure` en producción, sesión de ocho horas y validación de versión de sesión.
+- Auth.js con cookies `httpOnly`, `secure` en producción, sesión persistida/revocable, edad absoluta, timeout ocioso y validación de versión.
 - Contraseñas bcrypt, recuperación con token aleatorio almacenado como hash, expiración y uso único.
+- MFA TOTP con secreto cifrado y recovery codes de un solo uso; obligatorio para ADMIN y socios.
 - Autorización server-side por rol, propiedad y asignación. Las notas internas no forman parte de los DTO del cliente.
 - Restricción única de segmentos de cita para prevenir doble reserva concurrente.
 - CSP, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, protección de frames y HSTS únicamente en Vercel Production.
 - Preview y rutas privadas con `noindex`.
-- Documentos fuera de `public`, claves opacas, validación de magic bytes, tamaño, MIME y descarga autorizada o firmada.
-- Outbox de correo con estados, intentos, fecha del último intento, error sanitizado y `providerId`; nunca guarda claves del proveedor.
+- Documentos fuera de `public`, claves opacas, cuarentena, checksum, validación de magic bytes/OOXML, antivirus y descarga autorizada o firmada.
+- Outbox de correo con carga AES-256-GCM, claim/lease, backoff, dead letter, error sanitizado y `providerId`; nunca guarda claves del proveedor.
 
 ## Entornos
 
@@ -38,15 +41,11 @@ Un fallo de correo no revierte una cita o formulario ya guardado. El reintento a
 
 ## Almacenamiento
 
-Producción requiere S3 compatible antes de habilitar documentos. La aplicación no almacena documentos privados en `public`. Las URLs firmadas expiran y solo se generan después de validar acceso al asunto.
+Los entornos Vercel requieren S3 compatible antes de habilitar documentos; Production también requiere ClamAV. La aplicación no almacena documentos privados en `public`. Las URLs firmadas expiran y solo se generan después de validar acceso al asunto y estado `CLEAN`.
 
 ## Rate limiting
 
-`RATE_LIMIT_PROVIDER=database` utiliza Neon y ofrece un límite compartido entre funciones. `memory` sirve para local o un Preview inicial, pero no constituye protección global en Vercel. Las IP se normalizan, se combinan con un salt y solo se persiste el hash por ventana.
-
-## Revisión jurídica
-
-El aviso de privacidad y términos son borradores pendientes de aprobación. Deben confirmarse responsable, domicilio, finalidades, transferencias, derechos ARCO, conservación y proveedores internacionales antes de indexarlos.
+`RATE_LIMIT_PROVIDER=database` utiliza Neon y ofrece un límite compartido entre funciones; es obligatorio en Vercel Preview y Production. `memory` se limita al desarrollo/pruebas locales. Las IP se normalizan, se combinan con un salt y solo se persiste el hash por ventana.
 
 ## Incidentes
 

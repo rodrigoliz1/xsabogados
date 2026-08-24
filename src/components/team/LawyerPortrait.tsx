@@ -16,7 +16,9 @@ export function LawyerPortrait({
   className = "",
 }: LawyerPortraitProps) {
   return (
-    <div className={`relative isolate overflow-hidden bg-ink-3 ${className}`}>
+    <div
+      className={`group relative isolate overflow-hidden bg-ink-3 ${className}`}
+    >
       {lawyer.image ? (
         <Image
           src={lawyer.image}

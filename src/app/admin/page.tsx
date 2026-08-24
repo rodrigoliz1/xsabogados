@@ -18,7 +18,12 @@ export const dynamic = "force-dynamic";
 
 const appointmentStatus = {
   REQUESTED: { label: "Solicitada", tone: "gold" },
+  LAWYER_REVIEW: { label: "Revisión abogado", tone: "gold" },
+  CLIENT_REVIEW: { label: "Revisión cliente", tone: "blue" },
+  PROPOSED_BY_LAWYER: { label: "Propuesta del abogado", tone: "blue" },
+  PROPOSED_BY_CLIENT: { label: "Propuesta del cliente", tone: "gold" },
   CONFIRMED: { label: "Confirmada", tone: "green" },
+  DECLINED: { label: "Rechazada", tone: "neutral" },
   RESCHEDULE_REQUESTED: { label: "Reprogramación", tone: "blue" },
   CANCELLED: { label: "Cancelada", tone: "neutral" },
   COMPLETED: { label: "Concluida", tone: "green" },
@@ -60,6 +65,10 @@ async function loadDashboard() {
       activeMatters,
       mattersWithUpcomingMilestone,
       activeClients,
+      activeLawyers,
+      unreadMessages,
+      pendingArticles,
+      failedEmails,
       newSubmissions,
       upcomingAppointments,
       upcomingMatters,
@@ -91,6 +100,18 @@ async function loadDashboard() {
         },
       }),
       db.clientProfile.count({ where: { user: { status: "ACTIVE" } } }),
+      db.lawyerProfile.count({
+        where: { active: true, user: { status: "ACTIVE" } },
+      }),
+      db.message.count({ where: { readAt: null } }),
+      db.article.count({
+        where: {
+          status: { in: ["SUBMITTED", "CHANGES_REQUESTED", "APPROVED"] },
+        },
+      }),
+      db.emailOutbox.count({
+        where: { status: { in: ["FAILED", "DEAD_LETTER"] } },
+      }),
       db.contactSubmission.count({ where: { status: "NEW" } }),
       db.appointment.findMany({
         where: {
@@ -148,6 +169,10 @@ async function loadDashboard() {
         activeMatters,
         mattersWithUpcomingMilestone,
         activeClients,
+        activeLawyers,
+        unreadMessages,
+        pendingArticles,
+        failedEmails,
         newSubmissions,
       },
       upcomingAppointments,
@@ -235,6 +260,30 @@ export default async function AdminDashboardPage() {
               value={result.metrics.newSubmissions.toLocaleString("es-MX")}
               note="Pendientes de revisión"
               icon={ClipboardList}
+            />
+            <AdminMetric
+              label="Abogados activos"
+              value={result.metrics.activeLawyers.toLocaleString("es-MX")}
+              note="Cuentas profesionales activas"
+              icon={UsersRound}
+            />
+            <AdminMetric
+              label="Mensajes sin leer"
+              value={result.metrics.unreadMessages.toLocaleString("es-MX")}
+              note="En conversaciones autorizadas"
+              icon={ClipboardList}
+            />
+            <AdminMetric
+              label="Artículos pendientes"
+              value={result.metrics.pendingArticles.toLocaleString("es-MX")}
+              note="En flujo editorial"
+              icon={ClipboardList}
+            />
+            <AdminMetric
+              label="Correos fallidos"
+              value={result.metrics.failedEmails.toLocaleString("es-MX")}
+              note="Disponibles para reintento"
+              icon={DatabaseZap}
             />
           </section>
 

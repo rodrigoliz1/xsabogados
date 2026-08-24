@@ -63,8 +63,9 @@ describe("entornos de Vercel", () => {
     });
   });
 
-  it("selecciona Brevo y rechaza proveedores desconocidos", () => {
+  it("selecciona Brevo, conserva Resend y rechaza proveedores desconocidos", () => {
     expect(getEmailProviderName({ EMAIL_PROVIDER: "brevo" })).toBe("brevo");
+    expect(getEmailProviderName({ EMAIL_PROVIDER: "resend" })).toBe("resend");
     expect(() =>
       getEmailProviderName({ EMAIL_PROVIDER: "desconocido" }),
     ).toThrow(/no soportado/);

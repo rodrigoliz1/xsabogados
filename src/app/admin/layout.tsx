@@ -19,10 +19,13 @@ export default async function AdminLayout({
   if (!session?.user || session.user.active !== true) {
     redirect("/portal/iniciar-sesion?callbackUrl=%2Fadmin");
   }
-
   const role = (session.user as { role?: string }).role;
   if (role !== "ADMIN") {
-    redirect("/portal/panel?aviso=sin-acceso");
+    redirect(
+      role === "LAWYER"
+        ? "/portal/abogado?aviso=sin-acceso"
+        : "/portal/panel?aviso=sin-acceso",
+    );
   }
 
   async function signOutAction() {

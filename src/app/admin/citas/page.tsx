@@ -8,7 +8,6 @@ import { db } from "@/lib/db";
 import {
   assignAppointmentLawyerAction,
   cancelAppointmentAction,
-  confirmAppointmentAction,
   markAppointmentForRescheduleAction,
   saveAppointmentInternalNotesAction,
 } from "./actions";
@@ -59,7 +58,12 @@ type PageProps = {
 
 const statusPresentation = {
   REQUESTED: { label: "Solicitada", tone: "gold" },
+  LAWYER_REVIEW: { label: "Revisión abogado", tone: "gold" },
+  CLIENT_REVIEW: { label: "Revisión cliente", tone: "blue" },
+  PROPOSED_BY_LAWYER: { label: "Propuesta del abogado", tone: "blue" },
+  PROPOSED_BY_CLIENT: { label: "Propuesta del cliente", tone: "gold" },
   CONFIRMED: { label: "Confirmada", tone: "green" },
+  DECLINED: { label: "Rechazada", tone: "neutral" },
   RESCHEDULE_REQUESTED: { label: "Reprogramación", tone: "blue" },
   CANCELLED: { label: "Cancelada", tone: "neutral" },
   COMPLETED: { label: "Concluida", tone: "green" },
@@ -233,9 +237,6 @@ export default async function AdminAppointmentsPage({
           {result.appointments.map((appointment) => {
             const presentation = statusPresentation[appointment.status];
             const pendingChange = appointment.changeRequests[0];
-            const canConfirm =
-              appointment.status === "REQUESTED" ||
-              appointment.status === "PENDING_SYNC";
             const canChange = !["CANCELLED", "COMPLETED", "NO_SHOW"].includes(
               appointment.status,
             );
@@ -389,20 +390,6 @@ export default async function AdminAppointmentsPage({
                         No hay profesionales activos disponibles para asignar.
                       </p>
                     )}
-                    {canConfirm ? (
-                      <form action={confirmAppointmentAction}>
-                        <input
-                          type="hidden"
-                          name="appointmentId"
-                          value={appointment.id}
-                        />
-                        <AppointmentActionButton
-                          label="Confirmar cita"
-                          pendingLabel="Confirmando…"
-                          variant="primary"
-                        />
-                      </form>
-                    ) : null}
                     {canChange &&
                     appointment.status !== "RESCHEDULE_REQUESTED" ? (
                       <form action={markAppointmentForRescheduleAction}>

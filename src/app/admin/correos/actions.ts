@@ -16,13 +16,17 @@ export async function retryEmailAction(formData: FormData) {
   if (!parsed.success) redirect("/admin/correos?error=invalid");
 
   try {
-    await retryTrackedEmail(parsed.data.outboxId);
+    const result = await retryTrackedEmail(parsed.data.outboxId);
     await db.auditLog.create({
       data: {
         actorId: actor.id,
-        action: "EMAIL_OUTBOX_RETRIED",
+        action: "EMAIL_OUTBOX_REQUEUED",
         entityType: "EmailOutbox",
         entityId: parsed.data.outboxId,
+        metadata: {
+          status: result.status,
+          resetAttempts: result.resetAttempts,
+        },
       },
     });
   } catch {
@@ -40,5 +44,5 @@ export async function retryEmailAction(formData: FormData) {
   }
 
   revalidatePath("/admin/correos");
-  redirect("/admin/correos?notice=sent");
+  redirect("/admin/correos?notice=queued");
 }

@@ -1,12 +1,17 @@
 import { ArrowRight, CalendarDays, MapPin, Phone, Video } from "lucide-react";
 import Link from "next/link";
+import { ProposalActions } from "@/components/appointments/proposal-actions";
+import { ProposalForm } from "@/components/appointments/proposal-form";
 
 import {
   SectionHeading,
   StatusPill,
 } from "@/components/portal/portal-primitives";
 import { EmptyState } from "@/components/ui/empty-state";
-import { requireActor } from "@/server/policies";
+import {
+  canRespondToAppointmentProposal,
+  requireActor,
+} from "@/server/policies";
 import { getPortalSummary } from "@/server/services/portal-service";
 
 const modality = {
@@ -18,7 +23,8 @@ const modality = {
 export const dynamic = "force-dynamic";
 
 export default async function AppointmentsPage() {
-  const summary = await getPortalSummary(await requireActor());
+  const actor = await requireActor(["CLIENT"]);
+  const summary = await getPortalSummary(actor);
   return (
     <div className="space-y-8">
       <SectionHeading
@@ -28,7 +34,7 @@ export default async function AppointmentsPage() {
         action={
           <Link
             className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-black"
-            href="/agenda?origen=portal"
+            href={`/agenda?origen=portal${summary.matters[0]?.id ? `&asunto=${summary.matters[0].id}` : ""}`}
           >
             Solicitar nueva cita{" "}
             <ArrowRight aria-hidden="true" className="size-3.5" />
@@ -91,6 +97,45 @@ export default async function AppointmentsPage() {
                     {appointment.lawyer?.displayName ?? "Por asignar"}
                   </p>
                 </div>
+                {appointment.proposals[0] ? (
+                  <div className="mt-5 rounded-xl border border-white/10 p-4">
+                    <p className="text-xs text-white/45">
+                      Propuesta vigente:{" "}
+                      {new Intl.DateTimeFormat("es-MX", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                        timeZone: "America/Mexico_City",
+                      }).format(new Date(appointment.proposals[0].startAt))}
+                    </p>
+                    {canRespondToAppointmentProposal(
+                      actor,
+                      appointment.proposals[0].proposerSide,
+                    ) ? (
+                      <ProposalActions
+                        appointmentId={appointment.id}
+                        proposalId={appointment.proposals[0].id}
+                      />
+                    ) : (
+                      <p className="mt-3 text-xs text-white/30">
+                        Esperando respuesta del profesional.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+                {appointment.status !== "CONFIRMED" &&
+                !["CANCELLED", "DECLINED", "COMPLETED"].includes(
+                  appointment.status,
+                ) ? (
+                  <ProposalForm appointmentId={appointment.id} />
+                ) : null}
+                {appointment.status === "CONFIRMED" ? (
+                  <a
+                    href={`/api/portal/citas/${appointment.id}/ics`}
+                    className="mt-5 inline-flex text-[10px] uppercase tracking-[0.16em] text-paper-muted"
+                  >
+                    Descargar invitación ICS
+                  </a>
+                ) : null}
               </article>
             );
           })}

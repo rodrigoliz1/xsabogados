@@ -1,9 +1,8 @@
 import { MessageSquareText } from "lucide-react";
 
-import { MessageComposer } from "@/components/portal/message-composer";
+import { MatterChat } from "@/components/portal/matter-chat";
 import { SectionHeading } from "@/components/portal/portal-primitives";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDate } from "@/lib/utils";
 import { requireActor } from "@/server/policies";
 import {
   getPortalMatter,
@@ -56,42 +55,11 @@ export default async function MessagesPage({
             </p>
           </div>
         </div>
-        <div className="space-y-6 p-5 sm:p-7">
-          {matter.messages.length ? (
-            matter.messages.map((message) => (
-              <article className="flex gap-3 sm:gap-4" key={message.id}>
-                <span className="grid size-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-[10px] font-semibold text-white/55">
-                  {message.sender.name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .slice(0, 2)}
-                </span>
-                <div className="max-w-2xl">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-xs font-semibold text-white/75">
-                      {message.sender.name}
-                    </p>
-                    <span className="text-[9px] text-white/30">
-                      {formatDate(message.createdAt)}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[9px] text-white/30">
-                    {message.sender.role}
-                  </p>
-                  <p className="mt-3 rounded-2xl rounded-tl-sm bg-white/[0.06] px-4 py-3 text-sm leading-6 text-white/60">
-                    {message.body}
-                  </p>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p className="text-sm text-white/40">
-              Aún no hay mensajes visibles en este asunto.
-            </p>
-          )}
-        </div>
-        <MessageComposer matterId={matter.id} />
+        <MatterChat
+          matterId={matter.id}
+          currentUserId={actor.id}
+          initialMessages={matter.messages}
+        />
       </section>
     </div>
   );

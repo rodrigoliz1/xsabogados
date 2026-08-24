@@ -3,9 +3,8 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { PracticeAreaGrid } from "@/components/practice-areas/PracticeAreaGrid";
-import { EditorialImage } from "@/components/ui/editorial-image";
+import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
-import { editorialImages } from "@/data/editorial-images";
 import { practiceAreas } from "@/data/practice-areas";
 
 const SITE_URL = siteConfig.url;
@@ -67,10 +66,7 @@ export default function PracticeAreasPage() {
 
   return (
     <div className="bg-ink text-paper">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <section className="mx-auto max-w-shell px-5 pb-24 pt-36 sm:px-8 sm:pt-44 lg:px-12 lg:pb-32 lg:pt-52">
         <p className="text-xs font-semibold uppercase tracking-editorial text-paper-quiet">
@@ -87,7 +83,6 @@ export default function PracticeAreasPage() {
             corporativa, financiera, contenciosa y pública de una decisión.
           </p>
         </div>
-
       </section>
 
       <section className="mx-auto max-w-shell px-5 pb-28 sm:px-8 lg:px-12 lg:pb-40">

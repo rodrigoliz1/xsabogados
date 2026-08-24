@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { PreviewAccessModal } from "@/components/layout/preview-access-modal";
 import { siteConfig } from "@/config/site";
 import { isVercelPreview } from "@/lib/environment";
 
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -71,7 +74,10 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html data-scroll-behavior="smooth" lang="es-MX">
-      <body>{children}</body>
+      <body>
+        <PreviewAccessModal />
+        {children}
+      </body>
     </html>
   );
 }

@@ -49,10 +49,12 @@ export function EditorialImage({
             {image.label}
           </span>
           <a
+            aria-label={`Fuente de la imagen: ${image.label}`}
             className="text-right text-[0.58rem] text-white/55 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper"
             href={image.sourceUrl}
             rel="noopener noreferrer"
             target="_blank"
+            title={`Fuente de la imagen: ${image.label}`}
           >
             {image.credit}
           </a>

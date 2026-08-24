@@ -46,9 +46,7 @@ export async function POST(request: Request) {
         ok: true,
         reference: result.reference,
         message:
-          result.status === "CONFIRMED"
-            ? "Tu cita quedó confirmada. Conserva la referencia enviada."
-            : "Recibimos tu solicitud. La firma confirmará el horario y el canal de atención.",
+          "Recibimos tu solicitud. El horario quedará confirmado únicamente cuando ambas partes lo acepten.",
       },
       201,
     );

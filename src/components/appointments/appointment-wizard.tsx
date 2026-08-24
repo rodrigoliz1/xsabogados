@@ -44,11 +44,31 @@ const stepFields: Array<Array<keyof FormValues>> = [
   ["fullName", "email", "phone", "description", "privacyAccepted"],
 ];
 
-export function AppointmentWizard({ baseDate }: { baseDate: string }) {
+type PortalAppointmentContext = {
+  matterId: string;
+  matterReference: string;
+  lawyerName: string;
+  practiceArea: string;
+  lawyerSlug: string;
+  fullName: string;
+  company?: string;
+  email: string;
+  phone: string;
+};
+
+export function AppointmentWizard({
+  baseDate,
+  portalContext,
+}: {
+  baseDate: string;
+  portalContext?: PortalAppointmentContext;
+}) {
   const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
-  const initialArea = searchParams.get("area") ?? "";
-  const initialLawyer = searchParams.get("profesional") ?? "";
+  const initialArea =
+    portalContext?.practiceArea || searchParams.get("area") || "";
+  const initialLawyer =
+    portalContext?.lawyerSlug || searchParams.get("profesional") || "";
   const [step, setStep] = useState(0);
   const [slots, setSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -76,10 +96,10 @@ export function AppointmentWizard({ baseDate }: { baseDate: string }) {
         : "",
       date: "",
       time: "",
-      fullName: "",
-      company: "",
-      email: "",
-      phone: "",
+      fullName: portalContext?.fullName || "",
+      company: portalContext?.company || "",
+      email: portalContext?.email || "",
+      phone: portalContext?.phone || "",
       description: "",
       privacyAccepted: false,
       website: "",
@@ -89,6 +109,7 @@ export function AppointmentWizard({ baseDate }: { baseDate: string }) {
   const date = useWatch({ control, name: "date" });
   const time = useWatch({ control, name: "time" });
   const lawyerId = useWatch({ control, name: "lawyerId" });
+  const modality = useWatch({ control, name: "modality" });
 
   useEffect(() => {
     if (!date) return;
@@ -100,6 +121,7 @@ export function AppointmentWizard({ baseDate }: { baseDate: string }) {
       try {
         const query = new URLSearchParams({ date });
         if (lawyerId) query.set("lawyerId", lawyerId);
+        if (modality) query.set("modality", modality);
         const response = await fetch(`/api/agenda/disponibilidad?${query}`, {
           signal: controller.signal,
         });
@@ -118,7 +140,7 @@ export function AppointmentWizard({ baseDate }: { baseDate: string }) {
     };
     void load();
     return () => controller.abort();
-  }, [date, lawyerId, setValue]);
+  }, [date, lawyerId, modality, setValue]);
 
   const progress = useMemo(() => `${Math.min(step + 1, 3)} de 3`, [step]);
 
@@ -132,11 +154,17 @@ export function AppointmentWizard({ baseDate }: { baseDate: string }) {
 
   async function submit(values: FormValues) {
     setServerMessage("");
-    const response = await fetch("/api/citas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
+    const response = await fetch(
+      portalContext ? "/api/portal/citas" : "/api/citas",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...values,
+          ...(portalContext ? { matterId: portalContext.matterId } : {}),
+        }),
+      },
+    );
     const payload = (await response.json()) as {
       ok?: boolean;
       message?: string;
@@ -193,6 +221,17 @@ export function AppointmentWizard({ baseDate }: { baseDate: string }) {
       className="rounded-3xl border border-white/15 bg-white/[0.025] p-5 sm:p-8 lg:p-10"
       onSubmit={handleSubmit(submit)}
     >
+      {portalContext ? (
+        <div className="mb-6 rounded-2xl border border-emerald-200/20 bg-emerald-200/[0.06] p-4 text-sm leading-6 text-emerald-50">
+          <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-100/60">
+            Atención preferente · {portalContext.matterReference}
+          </p>
+          <p className="mt-2">
+            La solicitud se enviará directamente a {portalContext.lawyerName},
+            responsable de su asunto.
+          </p>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between border-b border-white/10 pb-5">
         <div>
           <p className="eyebrow text-paper-quiet">Agenda</p>

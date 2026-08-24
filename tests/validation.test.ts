@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { formatDateInTimeZone } from "@/lib/calendar/dates";
-import { appointmentSchema, contactSchema } from "@/lib/validation";
+import {
+  appointmentSchema,
+  articleEditorSchema,
+  availabilityQuerySchema,
+  contactSchema,
+} from "@/lib/validation";
 
 function validFutureDate() {
   return formatDateInTimeZone(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
@@ -73,5 +78,48 @@ describe("appointmentSchema", () => {
     expect(appointmentSchema.safeParse({ ...valid, admin: true }).success).toBe(
       false,
     );
+  });
+});
+
+describe("disponibilidad y editor editorial", () => {
+  it("valida modalidad de disponibilidad sin admitir parámetros arbitrarios", () => {
+    expect(
+      availabilityQuerySchema.safeParse({
+        date: validFutureDate(),
+        modality: "VIDEOLLAMADA",
+      }).success,
+    ).toBe(true);
+    expect(
+      availabilityQuerySchema.safeParse({
+        date: validFutureDate(),
+        modality: "SECRETA",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("acepta coautoría e imagen sólo mediante identificadores estructurados", () => {
+    const validCuid = "cm00000000000000000000001";
+    const result = articleEditorSchema.safeParse({
+      title: "Análisis mercantil contemporáneo",
+      slug: "analisis-mercantil-contemporaneo",
+      excerpt:
+        "Una revisión práctica de criterios relevantes para operaciones mercantiles.",
+      references: [],
+      tags: ["mercantil"],
+      heroMediaId: validCuid,
+      coauthorIds: ["cm00000000000000000000002"],
+      blocks: [{ type: "PARAGRAPH", text: "Contenido jurídico prudente." }],
+    });
+    expect(result.success).toBe(true);
+    expect(
+      articleEditorSchema.safeParse({
+        title: "Análisis mercantil contemporáneo",
+        slug: "analisis-mercantil-contemporaneo",
+        excerpt:
+          "Una revisión práctica de criterios relevantes para operaciones mercantiles.",
+        heroMediaId: "../../public/archivo.jpg",
+        blocks: [{ type: "PARAGRAPH", text: "Contenido" }],
+      }).success,
+    ).toBe(false);
   });
 });

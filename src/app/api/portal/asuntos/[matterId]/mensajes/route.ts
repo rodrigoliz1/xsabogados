@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { Visibility } from "@prisma/client";
+import { z } from "zod";
 
+import { db } from "@/lib/db";
 import { enforceRateLimit, RateLimitError } from "@/lib/security/rate-limit";
 import {
   ensureSameOrigin,
@@ -7,11 +10,105 @@ import {
   RequestSecurityError,
 } from "@/lib/security/request";
 import { portalMessageSchema } from "@/lib/validation";
-import { requireActor } from "@/server/policies";
+import {
+  canSeeRestrictedInternalContent,
+  requireActor,
+  requireMatterAccess,
+} from "@/server/policies";
 import { ServiceError } from "@/server/services/errors";
 import { createPortalMessage } from "@/server/services/portal-service";
 
 export const runtime = "nodejs";
+
+const messageQuerySchema = z.object({
+  cursor: z.string().cuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ matterId: string }> },
+) {
+  try {
+    const [{ matterId }, actor] = await Promise.all([
+      context.params,
+      requireActor(),
+    ]);
+    await requireMatterAccess(matterId, actor);
+    const url = new URL(request.url);
+    const query = messageQuerySchema.safeParse({
+      cursor: url.searchParams.get("cursor") || undefined,
+      limit: url.searchParams.get("limit") || undefined,
+    });
+    if (!query.success) {
+      return NextResponse.json(
+        { ok: false, message: "Paginación no válida." },
+        { status: 400 },
+      );
+    }
+    const messages = await db.message.findMany({
+      where: {
+        matterId,
+        deletedAt: null,
+        ...(actor.role === "CLIENT"
+          ? {
+              visibility: {
+                in: [Visibility.CLIENT, Visibility.CLIENT_VISIBLE],
+              },
+            }
+          : canSeeRestrictedInternalContent(actor)
+            ? {}
+            : {
+                visibility: {
+                  in: [
+                    Visibility.CLIENT,
+                    Visibility.CLIENT_VISIBLE,
+                    Visibility.INTERNAL,
+                  ],
+                },
+              }),
+      },
+      ...(query.data.cursor
+        ? { cursor: { id: query.data.cursor }, skip: 1 }
+        : {}),
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: query.data.limit,
+      select: {
+        id: true,
+        body: true,
+        visibility: true,
+        createdAt: true,
+        sender: { select: { id: true, name: true, role: true } },
+      },
+    });
+    return NextResponse.json(
+      {
+        ok: true,
+        data: messages.toReversed().map((message) => ({
+          ...message,
+          createdAt: message.createdAt.toISOString(),
+        })),
+        nextCursor:
+          messages.length === query.data.limit
+            ? messages[messages.length - 1]?.id
+            : null,
+      },
+      { headers: { "cache-control": "private, no-store" } },
+    );
+  } catch (error) {
+    const status = error instanceof ServiceError ? error.status : 500;
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          error instanceof ServiceError
+            ? error.message
+            : "No fue posible consultar los mensajes.",
+      },
+      { status, headers: { "cache-control": "private, no-store" } },
+    );
+  }
+}
 
 export async function POST(
   request: Request,

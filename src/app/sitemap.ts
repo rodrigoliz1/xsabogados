@@ -4,9 +4,18 @@ import { articles } from "@/data/articles";
 import { lawyers } from "@/data/lawyers";
 import { practiceAreas } from "@/data/practice-areas";
 import { siteConfig } from "@/config/site";
+import { db } from "@/lib/db";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const storedArticles = process.env.DATABASE_URL
+    ? await db.article
+        .findMany({
+          where: { status: "PUBLISHED", publishedAt: { not: null } },
+          select: { slug: true, publishedAt: true, updatedAt: true },
+        })
+        .catch(() => [])
+    : [];
   const staticRoutes = [
     "",
     "/firma",
@@ -15,7 +24,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/insights",
     "/agenda",
     "/contacto",
-    "/portal",
     "/aviso-de-privacidad",
     "/terminos",
   ];
@@ -46,5 +54,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly" as const,
       priority: 0.65,
     })),
+    ...storedArticles
+      .filter(
+        (article) => !articles.some((stored) => stored.slug === article.slug),
+      )
+      .map((article) => ({
+        url: `${siteConfig.url}/insights/${article.slug}`,
+        lastModified: article.updatedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.7,
+      })),
   ];
 }

@@ -1,5 +1,11 @@
 # Desplegar XS ABOGADOS
 
+## Migración de plataforma privada
+
+Antes del primer Preview funcional, configura la conexión pooled en `DATABASE_URL` y la directa en `DIRECT_URL`; después ejecuta deliberadamente `npm run db:deploy`. Las migraciones `20260803000000_full_legal_platform` y `20260805000000_production_security_hardening` son incrementales y no contienen borrados de tablas ni datos.
+
+En Preview pueden usarse calendario y correo mock. En Production, `CALENDAR_PROVIDER=mock`, `EMAIL_PROVIDER=mock`, `ENABLE_DEMO_AUTH=true` y `STORAGE_PROVIDER=local` son rechazados por el servidor. Para imágenes editoriales configura almacenamiento S3 compatible.
+
 ## 1. GitHub
 
 El cambio inicial de preparación utiliza:

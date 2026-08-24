@@ -4,6 +4,8 @@ export const ALLOWED_PRIVATE_DOCUMENT_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "image/jpeg",
   "image/png",
+  "image/webp",
+  "image/avif",
 ] as const;
 
 export type AllowedPrivateDocumentType =
@@ -20,6 +22,8 @@ export interface PrivateStorageProvider {
   put(input: {
     bytes: Uint8Array;
     mimeType: AllowedPrivateDocumentType;
+    quarantine?: boolean;
+    checksumSha256?: string;
   }): Promise<StoredObject>;
   get(key: string): Promise<Uint8Array>;
   delete(key: string): Promise<void>;

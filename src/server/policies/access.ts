@@ -12,14 +12,13 @@ export async function requireActor(allowedRoles?: PolicyActor["role"][]) {
   const session = await auth();
   if (!session?.user?.id || !session.user.active)
     throw new AuthenticationRequiredError();
-
   const user = await db.user.findFirst({
     where: { id: session.user.id, status: "ACTIVE" },
     select: {
       id: true,
       role: true,
       clientProfile: { select: { id: true } },
-      lawyerProfile: { select: { id: true, active: true } },
+      lawyerProfile: { select: { id: true, active: true, rank: true } },
     },
   });
   if (!user) throw new AuthenticationRequiredError();
@@ -30,8 +29,22 @@ export async function requireActor(allowedRoles?: PolicyActor["role"][]) {
     id: user.id,
     role: user.role,
     clientProfileId: user.clientProfile?.id ?? null,
-    lawyerProfileId: user.lawyerProfile?.active ? user.lawyerProfile.id : null,
+    lawyerProfileId: user.lawyerProfile?.id ?? null,
+    lawyerRank: user.lawyerProfile?.rank ?? null,
   } satisfies PolicyActor;
+}
+
+export const requireAuthenticatedUser = () => requireActor();
+export const requireAdmin = () => requireActor(["ADMIN"]);
+export const requireLawyer = () => requireActor(["LAWYER", "ADMIN"]);
+export const requireClient = () => requireActor(["CLIENT"]);
+
+export async function requirePartner() {
+  const actor = await requireActor(["LAWYER", "ADMIN"]);
+  if (actor.role !== "ADMIN" && actor.lawyerRank !== "PARTNER") {
+    throw new AccessDeniedError();
+  }
+  return actor;
 }
 
 export function matterWhereForActor(

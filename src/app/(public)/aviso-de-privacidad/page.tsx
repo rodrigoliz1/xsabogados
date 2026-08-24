@@ -30,9 +30,7 @@ const sections = [
           los datos personales que recabe mediante este sitio, la agenda, el
           portal del cliente y los canales de contacto habilitados.
         </p>
-        <p>
-          El domicilio del responsable es {institutionalData.address}
-        </p>
+        <p>El domicilio del responsable es {institutionalData.address}</p>
       </>
     ),
   },
@@ -116,8 +114,8 @@ const sections = [
         <p>
           Podrán realizarse transferencias cuando sean necesarias para cumplir
           obligaciones legales, atender requerimientos de autoridad, ejercer o
-          defender derechos, o coordinar servicios profesionales autorizados.
-          En cada caso se observarán las bases, finalidades y obligaciones
+          defender derechos, o coordinar servicios profesionales autorizados. En
+          cada caso se observarán las bases, finalidades y obligaciones
           previstas por la normativa aplicable.
         </p>
       </>

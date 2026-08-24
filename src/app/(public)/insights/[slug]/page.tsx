@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { ArticleGrid } from "@/components/articles/ArticleGrid";
+import { JsonLd } from "@/components/seo/json-ld";
 import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
 import {
@@ -13,6 +15,7 @@ import {
   getArticlesBySlugs,
 } from "@/data/articles";
 import { articleImages } from "@/data/editorial-images";
+import { db } from "@/lib/db";
 
 const SITE_URL = siteConfig.url;
 
@@ -33,6 +36,8 @@ export function generateStaticParams() {
   return articles.map((article) => ({ slug: article.slug }));
 }
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: ArticlePageProps): Promise<Metadata> {
@@ -40,7 +45,28 @@ export async function generateMetadata({
   const article = getArticleBySlug(slug);
 
   if (!article) {
-    return { title: "Artículo no encontrado | XS ABOGADOS" };
+    const stored = process.env.DATABASE_URL
+      ? await db.article
+          .findFirst({
+            where: { slug, status: "PUBLISHED" },
+            select: {
+              title: true,
+              excerpt: true,
+              seoTitle: true,
+              seoDescription: true,
+              publishedAt: true,
+              author: { select: { name: true } },
+            },
+          })
+          .catch(() => null)
+      : null;
+    if (!stored) return { title: "Artículo no encontrado | XS ABOGADOS" };
+    return {
+      title: `${stored.seoTitle || stored.title} | XS ABOGADOS`,
+      description: stored.seoDescription || stored.excerpt,
+      alternates: { canonical: `${SITE_URL}/insights/${slug}` },
+      authors: [{ name: stored.author?.name || "XS ABOGADOS" }],
+    };
   }
 
   return {
@@ -64,7 +90,193 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
   const article = getArticleBySlug(slug);
 
-  if (!article) notFound();
+  if (!article) {
+    const stored = process.env.DATABASE_URL
+      ? await db.article
+          .findFirst({
+            where: { slug, status: "PUBLISHED" },
+            include: {
+              blocks: { orderBy: { sortOrder: "asc" } },
+              author: {
+                include: {
+                  lawyerProfile: {
+                    include: {
+                      areas: {
+                        include: { practiceArea: { select: { name: true } } },
+                      },
+                    },
+                  },
+                },
+              },
+              coauthors: {
+                include: {
+                  user: {
+                    include: {
+                      lawyerProfile: {
+                        include: {
+                          areas: {
+                            include: {
+                              practiceArea: { select: { name: true } },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                orderBy: { sortOrder: "asc" },
+              },
+              practiceArea: { select: { name: true, slug: true } },
+              heroMedia: {
+                select: {
+                  id: true,
+                  altText: true,
+                  caption: true,
+                  width: true,
+                  height: true,
+                },
+              },
+            },
+          })
+          .catch(() => null)
+      : null;
+    if (!stored) notFound();
+    return (
+      <div className="bg-ink text-paper">
+        <article>
+          <header className="mx-auto max-w-shell px-5 pb-20 pt-36 sm:px-8 lg:px-12 lg:pt-52">
+            <Link
+              href="/insights"
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-paper-muted"
+            >
+              ← Todos los insights
+            </Link>
+            <p className="mt-12 border-t border-white/15 pt-10 text-[10px] uppercase tracking-[0.16em] text-paper-quiet">
+              {stored.practiceArea?.name || "Análisis jurídico"}
+            </p>
+            <h1 className="mt-8 max-w-6xl font-serif text-[clamp(3.8rem,8vw,8rem)] leading-[0.82] tracking-[-0.06em]">
+              {stored.title}
+            </h1>
+            <p className="mt-10 max-w-3xl text-xl leading-9 text-paper-muted">
+              {stored.excerpt}
+            </p>
+          </header>
+          {stored.heroMedia ? (
+            <figure className="mx-auto max-w-shell px-5 pb-20 sm:px-8 lg:px-12">
+              <Image
+                src={`/api/media/${stored.heroMedia.id}`}
+                alt={stored.heroMedia.altText}
+                width={stored.heroMedia.width}
+                height={stored.heroMedia.height}
+                sizes="(max-width: 1280px) 100vw, 1200px"
+                className="aspect-[16/7] w-full object-cover"
+              />
+              {stored.heroMedia.caption ? (
+                <figcaption className="mt-3 text-xs text-paper-quiet">
+                  {stored.heroMedia.caption}
+                </figcaption>
+              ) : null}
+            </figure>
+          ) : null}
+          <div className="mx-auto max-w-4xl px-5 pb-28 sm:px-8 lg:pb-40">
+            {stored.introduction ? (
+              <p className="mb-16 font-serif text-4xl leading-tight text-paper">
+                {stored.introduction}
+              </p>
+            ) : null}
+            <div className="space-y-8">
+              {stored.blocks.map((block) => {
+                const content = block.content as {
+                  text?: string;
+                  items?: string[];
+                  href?: string;
+                };
+                if (block.type === "HEADING_2")
+                  return (
+                    <h2 className="pt-8 font-serif text-5xl" key={block.id}>
+                      {content.text}
+                    </h2>
+                  );
+                if (block.type === "HEADING_3")
+                  return (
+                    <h3 className="pt-5 font-serif text-3xl" key={block.id}>
+                      {content.text}
+                    </h3>
+                  );
+                if (block.type === "LIST")
+                  return (
+                    <ul
+                      className="list-disc space-y-3 pl-6 text-lg leading-8 text-paper-muted"
+                      key={block.id}
+                    >
+                      {content.items?.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  );
+                if (block.type === "QUOTE")
+                  return (
+                    <blockquote
+                      className="border-l border-white/30 pl-7 font-serif text-3xl leading-tight"
+                      key={block.id}
+                    >
+                      {content.text}
+                    </blockquote>
+                  );
+                return (
+                  <p
+                    className="whitespace-pre-wrap text-lg leading-9 text-paper-muted"
+                    key={block.id}
+                  >
+                    {content.text}
+                  </p>
+                );
+              })}
+            </div>
+            {stored.conclusion ? (
+              <section className="mt-16 border-t border-white/15 pt-12">
+                <h2 className="font-serif text-4xl">Conclusiones</h2>
+                <p className="mt-6 whitespace-pre-wrap text-lg leading-9 text-paper-muted">
+                  {stored.conclusion}
+                </p>
+              </section>
+            ) : null}
+            <footer className="mt-20 border-t border-white/15 pt-8">
+              <p className="text-xs uppercase tracking-[0.16em] text-paper-quiet">
+                Artículo creado por
+              </p>
+              <div className="mt-4 flex flex-wrap gap-4">
+                {[stored.author, ...stored.coauthors.map((item) => item.user)]
+                  .filter(Boolean)
+                  .map((author) =>
+                    author ? (
+                      <Link
+                        key={author.id}
+                        href={
+                          author.lawyerProfile
+                            ? `/equipo/${author.lawyerProfile.slug}`
+                            : "/equipo"
+                        }
+                        className="text-lg text-paper hover:text-white"
+                      >
+                        {author.name}
+                        {author.lawyerProfile ? (
+                          <span className="block text-xs text-paper-quiet">
+                            {author.lawyerProfile.position} ·{" "}
+                            {author.lawyerProfile.areas?.[0]?.practiceArea
+                              .name || "XS ABOGADOS"}
+                          </span>
+                        ) : null}
+                      </Link>
+                    ) : null,
+                  )}
+              </div>
+            </footer>
+          </div>
+        </article>
+      </div>
+    );
+  }
 
   const relatedArticles = getArticlesBySlugs(article.relatedSlugs);
   const editorialImage =
@@ -121,10 +333,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <div className="bg-ink text-paper">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <article>
         <header className="mx-auto max-w-shell px-5 pb-20 pt-32 sm:px-8 sm:pt-40 lg:px-12 lg:pb-28 lg:pt-48">

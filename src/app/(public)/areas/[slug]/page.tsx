@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { PracticeFaqs } from "@/components/practice-areas/PracticeFaqs";
+import { JsonLd } from "@/components/seo/json-ld";
 import { LawyerGrid } from "@/components/team/LawyerGrid";
 import { EditorialImage } from "@/components/ui/editorial-image";
 import { siteConfig } from "@/config/site";
@@ -131,10 +132,7 @@ export default async function PracticeAreaPage({
 
   return (
     <div className="bg-ink text-paper">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <section className="mx-auto max-w-shell px-5 pb-24 pt-32 sm:px-8 sm:pt-40 lg:px-12 lg:pb-36 lg:pt-48">
         <Link
