@@ -5,9 +5,10 @@ import { ArrowUpRight, Clock3, MessageCircle } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import {
+  createPreviewAccessDeadline,
+  formatPreviewAccessDeadline,
+  getPreviewAccessStorageKey,
   getPreviewTimeRemaining,
-  PREVIEW_ACCESS_DEADLINE_LABEL,
-  PREVIEW_ACCESS_EXPIRES_AT,
   PREVIEW_ACCESS_OWNER_URL,
   PREVIEW_ACCESS_WHATSAPP_URL,
   type PreviewTimeRemaining,
@@ -31,8 +32,17 @@ function formatUnit(value: number) {
   return String(value).padStart(2, "0");
 }
 
-export function PreviewAccessModal() {
+type PreviewAccessModalProps = {
+  durationDays: number;
+  instanceKey: string;
+};
+
+export function PreviewAccessModal({
+  durationDays,
+  instanceKey,
+}: PreviewAccessModalProps) {
   const [open, setOpen] = useState(true);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [remaining, setRemaining] = useState<PreviewTimeRemaining | null>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -43,14 +53,46 @@ export function PreviewAccessModal() {
   const accessExpired = remaining?.expired === true;
 
   useEffect(() => {
+    const storageKey = getPreviewAccessStorageKey(instanceKey, durationDays);
+    let deadline: Date | null = null;
+
+    try {
+      const storedDeadline = window.localStorage.getItem(storageKey);
+      if (storedDeadline) {
+        const parsedDeadline = new Date(storedDeadline);
+        if (!Number.isNaN(parsedDeadline.getTime())) deadline = parsedDeadline;
+      }
+    } catch {
+      // El aviso sigue funcionando aunque el navegador bloquee localStorage.
+    }
+
+    if (!deadline) {
+      deadline = createPreviewAccessDeadline(durationDays);
+      try {
+        window.localStorage.setItem(storageKey, deadline.toISOString());
+      } catch {
+        // El contador permanece operativo durante la sesión actual.
+      }
+    }
+
+    const deadlineFrame = window.requestAnimationFrame(() => {
+      setExpiresAt(deadline);
+    });
+
+    return () => window.cancelAnimationFrame(deadlineFrame);
+  }, [durationDays, instanceKey]);
+
+  useEffect(() => {
+    if (!expiresAt) return;
+
     const updateCountdown = () => {
-      setRemaining(getPreviewTimeRemaining(PREVIEW_ACCESS_EXPIRES_AT));
+      setRemaining(getPreviewTimeRemaining(expiresAt));
     };
 
     updateCountdown();
     const interval = window.setInterval(updateCountdown, 1_000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [expiresAt]);
 
   useEffect(() => {
     if (!open) return;
@@ -224,7 +266,9 @@ export function PreviewAccessModal() {
                 </div>
 
                 <p className="mt-3 text-[0.62rem] leading-5 text-paper-quiet sm:mt-4">
-                  {PREVIEW_ACCESS_DEADLINE_LABEL}. Hora de Guadalajara.
+                  {expiresAt
+                    ? `${formatPreviewAccessDeadline(expiresAt)}. Hora de Guadalajara.`
+                    : "Calculando fecha de conclusión…"}
                 </p>
 
                 <p className="mt-5 border-t border-white/10 pt-5 text-sm leading-6 text-paper-muted sm:mt-7 sm:pt-6">

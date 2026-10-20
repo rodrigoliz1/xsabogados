@@ -25,8 +25,9 @@ No se requiere Render ni un backend independiente.
 8. Use `CALENDAR_PROVIDER=mock` y `NEXT_PUBLIC_CALENDAR_PROVIDER=mock` si aún no probará Google.
 9. Configure S3 y ClamAV de prueba: los documentos no deben depender del filesystem efímero de Vercel.
 10. Active `ENABLE_DEMO_AUTH=true` solo si el borrador necesita cuentas demo.
-11. Ejecute `npm run db:deploy` deliberadamente contra Neon Preview.
-12. Despliegue y pruebe formularios, citas, correo, login/MFA, roles, archivos y móvil.
+11. Configure `PREVIEW_ACCESS=false` para ocultar el aviso o `PREVIEW_ACCESS=true15` para mostrarlo durante 15 días.
+12. Ejecute `npm run db:deploy` deliberadamente contra Neon Preview.
+13. Despliegue y pruebe formularios, citas, correo, login/MFA, roles, archivos y móvil.
 
 Vercel Preview se ejecuta con `NODE_ENV=production`, pero la aplicación usa `VERCEL_ENV=preview` para permitir calendario y autenticación demo. El Preview incluye `noindex, nofollow`.
 
@@ -55,6 +56,7 @@ Vercel Preview se ejecuta con `NODE_ENV=production`, pero la aplicación usa `VE
 | `DATA_ENCRYPTION_KEY_CURRENT`   | Clave exclusiva                   | Clave exclusiva distinta  | Sí      |
 | `MFA_RECOVERY_CODE_PEPPER`      | Valor exclusivo                   | Valor exclusivo distinto  | Sí      |
 | `NEXT_PUBLIC_SITE_URL`          | Omitir para inferir o URL Preview | `https://xs-abogados.com` | No      |
+| `PREVIEW_ACCESS`                | `false` o `true15`                | `false`                   | No      |
 | `EMAIL_PROVIDER`                | `brevo`                           | `brevo`                   | No      |
 | `BREVO_API_KEY`                 | Clave Preview/sandbox             | Clave Production          | Sí      |
 | `EMAIL_FROM_ADDRESS`            | Remitente verificado              | Remitente verificado      | No      |

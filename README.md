@@ -71,6 +71,7 @@ Grupos principales:
 - Calendario: `CALENDAR_PROVIDER` y credenciales de Google.
 - Seguridad: claves de cifrado versionadas, `RATE_LIMIT_PROVIDER`, `RATE_LIMIT_SALT` y secretos de cron.
 - Archivos privados: `STORAGE_PROVIDER`, credenciales S3 y configuración ClamAV.
+- Vista previa restringida: `PREVIEW_ACCESS=false` la desactiva; `PREVIEW_ACCESS=true15` la activa durante 15 días a partir de la primera visita de cada navegador al deployment.
 
 La aplicación valida Brevo al construir el proveedor, no durante la generación estática. Por ello el build puede ejecutarse sin secretos, pero una función de correo produce un error de configuración claro y seguro si faltan variables en runtime.
 

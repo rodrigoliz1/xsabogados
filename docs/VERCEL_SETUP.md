@@ -12,7 +12,7 @@
 
 ## Preview
 
-Añada las variables de Neon Preview, Brevo y seguridad. Use calendario mock. Puede activar demo manualmente. Si omite `NEXT_PUBLIC_SITE_URL`, los enlaces del servidor utilizan `VERCEL_URL`; si la establece, debe ser la URL exacta del Preview. Despliegue y confirme que el header `X-Robots-Tag` impide indexación.
+Añada las variables de Neon Preview, Brevo y seguridad. Use calendario mock. Puede activar demo manualmente. Configure `PREVIEW_ACCESS=false` para ocultar el aviso de vista previa o `PREVIEW_ACCESS=true15` para activarlo durante 15 días; cualquier cambio requiere redeploy. Si omite `NEXT_PUBLIC_SITE_URL`, los enlaces del servidor utilizan `VERCEL_URL`; si la establece, debe ser la URL exacta del Preview. Despliegue y confirme que el header `X-Robots-Tag` impide indexación.
 
 Después de crear Neon Preview:
 

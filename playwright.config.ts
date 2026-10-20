@@ -36,6 +36,8 @@ export default defineConfig({
           STORAGE_PROVIDER: "local",
           FILE_SCANNER_PROVIDER: "mock",
           ENABLE_DEMO_AUTH: "false",
+          PREVIEW_ACCESS: "true30",
+          VERCEL_DEPLOYMENT_ID: "playwright-local",
         },
       },
 });

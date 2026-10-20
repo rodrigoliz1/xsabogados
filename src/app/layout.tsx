@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { PreviewAccessModal } from "@/components/layout/preview-access-modal";
 import { siteConfig } from "@/config/site";
 import { isVercelPreview } from "@/lib/environment";
+import { parsePreviewAccessConfig } from "@/lib/preview-access";
 
 import "./globals.css";
 
@@ -72,10 +73,22 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  const previewAccess = parsePreviewAccessConfig(process.env.PREVIEW_ACCESS);
+  const previewInstanceKey =
+    process.env.VERCEL_DEPLOYMENT_ID ??
+    process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ??
+    process.env.VERCEL_URL ??
+    "local";
+
   return (
     <html data-scroll-behavior="smooth" lang="es-MX">
       <body>
-        <PreviewAccessModal />
+        {previewAccess.enabled ? (
+          <PreviewAccessModal
+            durationDays={previewAccess.durationDays}
+            instanceKey={previewInstanceKey}
+          />
+        ) : null}
         {children}
       </body>
     </html>

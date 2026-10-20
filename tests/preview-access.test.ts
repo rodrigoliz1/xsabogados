@@ -1,32 +1,50 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createPreviewAccessDeadline,
+  formatPreviewAccessDeadline,
+  getPreviewAccessStorageKey,
   getPreviewTimeRemaining,
-  PREVIEW_ACCESS_EXPIRES_AT,
+  parsePreviewAccessConfig,
   PREVIEW_ACCESS_WHATSAPP_URL,
 } from "@/lib/preview-access";
 
 describe("acceso temporal de vista previa", () => {
-  it("inicia con una ventana global de exactamente 30 días", () => {
-    expect(
-      getPreviewTimeRemaining(
-        PREVIEW_ACCESS_EXPIRES_AT,
-        new Date("2026-08-24T10:47:28-06:00"),
-      ),
-    ).toMatchObject({
-      days: 30,
+  it.each([undefined, "", "false", "true", "true0", "true-15", "otro"])(
+    "permanece desactivado con el valor %s",
+    (value) => {
+      expect(parsePreviewAccessConfig(value)).toEqual({ enabled: false });
+    },
+  );
+
+  it("activa el aviso y extrae los días de true{x}", () => {
+    expect(parsePreviewAccessConfig(" true15 ")).toEqual({
+      enabled: true,
+      durationDays: 15,
+    });
+  });
+
+  it("crea una ventana de exactamente los días configurados", () => {
+    const startedAt = new Date("2026-10-20T10:47:28-06:00");
+    const deadline = createPreviewAccessDeadline(15, startedAt);
+
+    expect(getPreviewTimeRemaining(deadline, startedAt)).toMatchObject({
+      days: 15,
       hours: 0,
       minutes: 0,
       seconds: 0,
       expired: false,
     });
+    expect(formatPreviewAccessDeadline(deadline)).toContain(
+      "4 de noviembre de 2026",
+    );
   });
 
   it("se detiene en cero al concluir el acceso", () => {
     expect(
       getPreviewTimeRemaining(
-        PREVIEW_ACCESS_EXPIRES_AT,
-        new Date("2026-09-24T10:47:28-06:00"),
+        new Date("2026-11-04T10:47:28-06:00"),
+        new Date("2026-11-05T10:47:28-06:00"),
       ),
     ).toEqual({
       days: 0,
@@ -36,6 +54,15 @@ describe("acceso temporal de vista previa", () => {
       totalSeconds: 0,
       expired: true,
     });
+  });
+
+  it("separa el vencimiento por deployment y duración", () => {
+    expect(getPreviewAccessStorageKey("deployment-a", 15)).not.toBe(
+      getPreviewAccessStorageKey("deployment-b", 15),
+    );
+    expect(getPreviewAccessStorageKey("deployment-a", 15)).not.toBe(
+      getPreviewAccessStorageKey("deployment-a", 30),
+    );
   });
 
   it("dirige al número mexicano de administración", () => {
