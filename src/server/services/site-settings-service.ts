@@ -2,6 +2,7 @@ import "server-only";
 
 import { siteConfig } from "@/config/site";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/observability/logger";
 
 export type PublicSiteSettings = {
   firmName: string;
@@ -68,8 +69,10 @@ export async function getPublicSiteSettings(): Promise<PublicSiteSettings> {
       ...settings,
       socialLinks: normalizeSocialLinks(settings.socialLinks),
     };
-  } catch (error) {
-    if (process.env.NODE_ENV === "production") throw error;
+  } catch {
+    logger.warn("public-site-settings.defaulted", {
+      reason: "database-unavailable",
+    });
     return defaultPublicSiteSettings;
   }
 }
